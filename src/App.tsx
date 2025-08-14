@@ -11,9 +11,10 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import Home from './pages/home';
+import Group from './pages/group';
+import Message from './pages/message';
+import Mine from './pages/mine';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -30,6 +31,11 @@ import '@ionic/react/css/text-alignment.css';
 import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
+
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import InterestsOutlinedIcon from '@mui/icons-material/InterestsOutlined';
+import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 
 /**
  * Ionic Dark Mode
@@ -52,31 +58,39 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
+          <Route exact path="/home">
+            <Home />
           </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
+          <Route exact path="/group">
+            <Group />
           </Route>
-          <Route path="/tab3">
-            <Tab3 />
+          <Route path="/message">
+            <Message />
+          </Route>
+          <Route path="/mine">
+            <Mine />
           </Route>
           <Route exact path="/">
-            <Redirect to="/tab1" />
+            <Redirect to="/home" />
           </Route>
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
+          <IonTabButton tab="home" href="/home">
+            {/* <IonIcon aria-hidden="true" icon={triangle} /> */}
+            <HomeOutlinedIcon />
+            <IonLabel>首 页</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
+          <IonTabButton tab="group" href="/group">
+            <InterestsOutlinedIcon />
+            <IonLabel>共识圈子</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
+          <IonTabButton tab="message" href="/message">
+            <SmsOutlinedIcon />
+            <IonLabel>消息</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="mine" href="/mine">
+            <PersonOutlineOutlinedIcon />
+            <IonLabel>个人主页</IonLabel>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>
