@@ -1,0 +1,150 @@
+/* 启动动画样式 */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 50%, #ffffff 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* 背景动画效果 */
+.splash-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 90, 94, 0.05) 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* 背景图片容器 */
+.splash-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 启动图片 - 填充整个屏幕 */
+.splash-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* 图片遮罩层 */
+.splash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 90, 94, 0.3) 0%, rgba(255, 122, 126, 0.2) 50%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+
+
+/* 加载指示器 */
+.splash-loader {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.splash-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.splash-dot:nth-child(1) { animation-delay: 0s; }
+.splash-dot:nth-child(2) { animation-delay: 0.16s; }
+.splash-dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* 装饰性元素 */
+.splash-decoration {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  animation: rotate 8s linear infinite;
+}
+
+.splash-decoration.top-right {
+  top: 10%;
+  right: 10%;
+  width: 60px;
+  height: 60px;
+}
+
+.splash-decoration.bottom-left {
+  bottom: 15%;
+  left: 5%;
+  width: 40px;
+  height: 40px;
+  animation: rotate 6s linear infinite reverse;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  /* 移动端适配 */
+}
+
+@media (max-width: 480px) {
+  /* 小屏幕适配 */
+}
+
+/* 淡入淡出动画 */
+.splash-fade-in {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.splash-fade-in.active {
+  opacity: 1;
+  transform: scale(1);
+}

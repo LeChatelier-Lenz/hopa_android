@@ -1,0 +1,130 @@
+/* 全局视口设置 */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* 偏好设置完成页面样式 */
+.complete-container {
+  min-height: 100vh;
+  height: 100vh;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  overflow: hidden;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .complete-container {
+    height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 针对1080x2400等长屏设备的适配 */
+@media screen and (min-height: 2000px) {
+  .complete-container {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+/* 完成状态卡片动画 */
+.complete-status-card {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 建议卡片悬停效果 */
+.suggestion-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.suggestion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 90, 94, 0.15);
+}
+
+/* 偏好标签动画 */
+.preference-chip {
+  animation: fadeInScale 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.preference-chip:nth-child(1) { animation-delay: 0.1s; }
+.preference-chip:nth-child(2) { animation-delay: 0.2s; }
+.preference-chip:nth-child(3) { animation-delay: 0.3s; }
+.preference-chip:nth-child(4) { animation-delay: 0.4s; }
+.preference-chip:nth-child(5) { animation-delay: 0.5s; }
+.preference-chip:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 进度条动画 */
+.personalization-progress {
+  transition: width 1s ease-in-out;
+}
+
+/* 按钮悬停效果 */
+.action-button {
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 90, 94, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .complete-container {
+    padding: 1rem;
+  }
+  
+  .suggestion-card {
+    margin-bottom: 1rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .complete-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+  
+  .suggestion-card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+  }
+}

@@ -1,0 +1,117 @@
+/* 全局视口设置 */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* 个人偏好设置页面样式 */
+.preferences-container {
+  min-height: 100vh;
+  height: 100vh;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  overflow: hidden;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .preferences-container {
+    height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 针对1080x2400等长屏设备的适配 */
+@media screen and (min-height: 2000px) {
+  .preferences-container {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+/* 词云动画效果 */
+.word-cloud-chip {
+  animation: float 3s ease-in-out infinite;
+}
+
+.word-cloud-chip:nth-child(odd) {
+  animation-delay: 0.5s;
+}
+
+.word-cloud-chip:nth-child(even) {
+  animation-delay: 1s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* 进度条动画 */
+.progress-bar {
+  transition: width 0.5s ease-in-out;
+}
+
+/* 问题卡片阴影效果 */
+.question-card {
+  box-shadow: 0 4px 20px rgba(255, 90, 94, 0.1);
+  transition: all 0.3s ease;
+}
+
+.question-card:hover {
+  box-shadow: 0 6px 25px rgba(255, 90, 94, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 输入框焦点效果 */
+.custom-input:focus-within {
+  box-shadow: 0 0 0 2px rgba(255, 90, 94, 0.2);
+}
+
+/* 按钮悬停效果 */
+.nav-button {
+  transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 90, 94, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .preferences-container {
+    padding: 1rem;
+  }
+  
+  .word-cloud-container {
+    gap: 0.75rem;
+  }
+  
+  .word-cloud-chip {
+    font-size: 0.8rem;
+    height: 32px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .preferences-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+  
+  .question-card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+  }
+}

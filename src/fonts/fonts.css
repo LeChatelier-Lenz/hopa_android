@@ -1,0 +1,29 @@
+/* 阿里妈妈数黑体字体声明 */
+@font-face {
+  font-family: 'AlimamaShuHeiTi';
+  src: url('./AlimamaShuHeiTi-Bold.woff2') format('woff2'),
+       url('./AlimamaShuHeiTi-Bold.woff') format('woff'),
+       url('./AlimamaShuHeiTi-Bold.otf') format('opentype'),
+       url('./AlimamaShuHeiTi-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 字体回退方案 */
+@font-face {
+  font-family: 'AlimamaShuHeiTi';
+  src: url('./AlimamaShuHeiTi-Bold.woff2') format('woff2'),
+       url('./AlimamaShuHeiTi-Bold.woff') format('woff'),
+       url('./AlimamaShuHeiTi-Bold.otf') format('opentype'),
+       url('./AlimamaShuHeiTi-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 全局字体变量 */
+:root {
+  --font-family-bold: 'AlimamaShuHeiTi', 'PingFang SC', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --font-family-regular: 'PingFang SC', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+}
