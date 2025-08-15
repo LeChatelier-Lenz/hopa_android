@@ -4,7 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Hopa", an Ionic React application that targets Android using Capacitor for native mobile app development. The project uses React 19 with TypeScript, Vite for building, and Material-UI alongside Ionic components for the user interface.
+**合拍 Hopa** – 让计划一拍即合的 AI 共识工具
+
+### Product Description
+Hopa is an AI-powered relationship consensus tool that helps couples, friends, or family members quickly find mutually satisfactory solutions when facing disagreements about plans and decisions.
+
+### Core Features
+- **Emotion-Safe Consensus Dialogue**: Guide users to express needs structurally without direct confrontation
+- **AI Draft Generation**: Intelligently analyze both parties' inputs to quickly generate plans that accommodate both needs
+- **Gamified Conflict Resolution**: Use lightweight interactive mechanisms (spin wheels, cards, mini-games) to reduce emotional cost of compromise
+- **Consensus Card Memory**: Record reached agreements as shareable visual cards with ceremonial feel
+
+### Typical Use Case
+A couple planning a vacation disagrees on destination, budget, and schedule. Hopa guides each person to fill in their desires ("want to take photos", "want to eat hotpot"). AI generates a draft plan considering both needs, then uses gamified interactions to resolve conflicts, finally creating a shareable "consensus card" to celebrate the agreement.
+
+### Technical Foundation
+Ionic React application targeting Android via Capacitor, built with React 19, TypeScript, and Vite, designed for warm and ritualistic intimate relationship experiences.
 
 ## Common Development Commands
 
@@ -33,25 +48,68 @@ This is "Hopa", an Ionic React application that targets Android using Capacitor 
 
 ## Architecture
 
-### Tech Stack
+### Current Tech Stack
 - **Frontend**: React 19 + TypeScript 5.1.6
 - **Build Tool**: Vite 5.2.0
 - **Mobile Framework**: Ionic React 8.5.0 + Capacitor 7.4.2
-- **UI Libraries**: Material-UI 7.3.1 (primary), Ionicons 7.4.0
+- **UI Libraries**: Material-UI 7.3.1 (current), Ionicons 7.4.0
 - **Routing**: React Router 5.3.4 with Ionic React Router
 - **Testing**: Vitest (unit), Cypress (e2e)
 - **Linting**: ESLint 9 with TypeScript ESLint
+
+### Recommended UI Stack for "Warm & Ritualistic" Design
+
+#### Core UI Framework
+- **Ionic UI** (https://ionicframework.com/docs/components)
+  - Seamlessly integrates with Capacitor
+  - Excellent mobile performance with built-in animations
+  - Use for: buttons, forms, navigation, cards
+
+#### Advanced UI Components
+- **Chakra UI** (https://chakra-ui.com)
+  - Gentle design philosophy, strong semantic components
+  - Excellent dark mode and responsive support
+  - Use for: forms, multi-step dialogues, layout alignment, theming
+
+#### Animation & Motion
+- **Framer Motion** (https://www.framer.com/motion/)
+  - Smooth transitions, simple API calls
+  - Perfect for gamified page interactions
+  - Use for: page transitions, card flips, spin wheel animations
+
+#### Rich Animations
+- **Lottie + LottieFiles** (https://lottiefiles.com)
+  - Ready-made illustrations and animations for React
+  - Use for: celebration animations when generating consensus cards, ritual feel
+
+#### Style Customization
+- **Tailwind CSS** (https://tailwindcss.com)
+  - Controllable styling, quick color/border-radius/spacing adjustments
+  - Use for: fine-tuning details with Chakra or Ionic
+
+#### Recommended Architecture
+- **Ionic UI**: Mobile foundation (navigation, basic components)
+- **Chakra UI**: Advanced components (forms, dialogs)
+- **Tailwind CSS**: Detail polishing
+- **Framer Motion + Lottie**: Animations and micro-interactions
+- Result: Fast development with warm, ceremonial, intimate relationship feel
 
 ### Project Structure
 ```
 src/
 ├── pages/              # Main application pages
-│   ├── home.tsx        # 首页 (Home)
-│   ├── group.tsx       # 共识圈子 (Consensus Groups)
-│   ├── message.tsx     # 消息 (Messages)
-│   └── mine.tsx        # 个人主页 (Profile)
+│   ├── home.tsx        # 首页 (Home) - Main entry point
+│   ├── group.tsx       # 共识圈子 (Consensus Creation) - AI consensus process
+│   ├── message.tsx     # 消息 (Messages) - Communication & history
+│   └── mine.tsx        # 个人主页 (Profile) - User settings & consensus cards
 ├── components/         # Reusable components
+│   ├── consensus/      # Consensus-related components (planned)
+│   ├── cards/         # Consensus card components (planned)
+│   ├── games/         # Gamification components (planned)
+│   └── animations/    # Lottie/Framer Motion components (planned)
 ├── theme/             # Ionic theme customization
+├── hooks/             # Custom React hooks (planned)
+├── services/          # AI API integration (planned)
 └── App.tsx            # Main app with tab-based navigation
 
 android/               # Native Android project
@@ -81,6 +139,23 @@ dist/                  # Build output (webDir in Capacitor config)
 ### Code Conventions
 - Use functional React components with TypeScript
 - Follow Ionic page structure patterns
-- Use Material-UI icons for consistency
+- **UI Component Priority**: Ionic UI (foundation) → Chakra UI (advanced) → Tailwind (details)
+- **Animation Approach**: Framer Motion for interactions, Lottie for celebrations
+- **Design Principles**: Warm, gentle, ritualistic feel for intimate relationships
 - CSS files co-located with components
-- Chinese text for user-facing labels in tab navigation
+- Chinese text for user-facing labels
+- Semantic component naming for consensus flow (e.g., ConsensusCard, AgreementWheel)
+
+### Development Priorities
+1. **Consensus Flow**: Multi-step guided process for conflict resolution
+2. **AI Integration**: Backend API for generating compromise solutions
+3. **Gamification**: Interactive elements to reduce negotiation friction
+4. **Consensus Cards**: Visual celebration of reached agreements
+5. **Smooth Animations**: Enhance emotional experience during sensitive conversations
+
+### UI/UX Guidelines
+- Prioritize emotional safety in conflict resolution flows
+- Use warm colors and gentle transitions
+- Implement micro-interactions to celebrate small wins
+- Design for couples/friends using the app together
+- Ensure accessibility for different relationship dynamics
