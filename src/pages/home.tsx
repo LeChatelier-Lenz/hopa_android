@@ -25,6 +25,7 @@ import AddIcon from '@mui/icons-material/Add';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import UserAvatar from '../components/UserAvatar';
+import { useHistory } from 'react-router-dom';
 import './home.css';
 
 interface TabPanelProps {
@@ -50,10 +51,15 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Home: React.FC = () => {
+  const history = useHistory();
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handleLaunchConsensus = () => {
+    history.push('/launch');
   };
 
   const mockConsensusData = {
@@ -87,6 +93,7 @@ const Home: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
+              onClick={handleLaunchConsensus}
               sx={{
                 bgcolor: '#ff5a5e',
                 borderRadius: 3,

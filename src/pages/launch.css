@@ -1,0 +1,168 @@
+/* 发起共识页面样式 */
+
+/* 确保页面占满整个视口 */
+.launch-page {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .launch-page {
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+/* 长屏幕适配 */
+@media (min-height: 2000px) {
+  .launch-page {
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+/* 邀请面板动画 */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.invite-panel {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* 等待动画 */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.waiting-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 进度条动画 */
+.progress-bar {
+  transition: width 0.1s ease;
+}
+
+/* 文件上传区域 */
+.file-upload-area {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.3s ease;
+}
+
+.file-upload-area:hover {
+  border-color: #ff5a5e;
+}
+
+/* 语音录制按钮 */
+.voice-record-button {
+  transition: all 0.3s ease;
+}
+
+.voice-record-button.recording {
+  background-color: #ff5a5e !important;
+  color: white !important;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* 步骤指示器样式 */
+.step-indicator {
+  background: linear-gradient(45deg, #ff5a5e, #ff7a7e);
+}
+
+/* 按钮样式 */
+.primary-button {
+  background: linear-gradient(45deg, #ff5a5e, #ff7a7e) !important;
+  color: white !important;
+  transition: all 0.3s ease;
+}
+
+.primary-button:hover {
+  background: linear-gradient(45deg, #ff4a4e, #ff6a6e) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 90, 94, 0.4);
+}
+
+/* 卡片样式 */
+.consensus-card {
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.consensus-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 好友列表样式 */
+.friend-list-item {
+  transition: background-color 0.3s ease;
+}
+
+.friend-list-item:hover {
+  background-color: rgba(255, 90, 94, 0.05);
+}
+
+/* 分享按钮样式 */
+.share-button {
+  transition: all 0.3s ease;
+}
+
+.share-button:hover {
+  transform: scale(1.05);
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .step-content {
+    padding: 16px;
+  }
+  
+  .invite-panel {
+    max-height: 70vh;
+  }
+}
+
+/* 返回按钮样式 */
+.back-button {
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  transform: scale(1.1);
+}
+
+/* 头部样式 */
+.launch-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 安全区域适配 */
+@supports (padding: max(0px)) {
+  .launch-page {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  
+  .invite-panel {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}

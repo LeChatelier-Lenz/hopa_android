@@ -19,6 +19,9 @@ import Message from './pages/message';
 import Mine from './pages/mine';
 import PreferenceSettings from './pages/preferences';
 import PreferencesComplete from './pages/preferences-complete';
+import LaunchPage from './pages/launch';
+import GamePage from './pages/game';
+import ErrorPage from './pages/ErrorPage';
 import { theme } from './theme/theme';
 import { PreferencesProvider } from './context/PreferencesContext';
 import SplashScreen from './components/SplashScreen';
@@ -85,6 +88,21 @@ const App: React.FC = () => {
             </Route>
             <Route exact path="/preferences-complete">
               <PreferencesComplete />
+            </Route>
+            
+            {/* 发起共识页面 - 不显示底部导航栏 */}
+            <Route exact path="/launch">
+              <LaunchPage />
+            </Route>
+            
+            {/* 游戏页面 - 不显示底部导航栏 */}
+            <Route exact path="/game">
+              <GamePage />
+            </Route>
+            
+            {/* 错误页面 - 不显示底部导航栏 */}
+            <Route exact path="/error">
+              <ErrorPage />
             </Route>
             
             {/* 主应用路由 - 带底部导航栏 */}

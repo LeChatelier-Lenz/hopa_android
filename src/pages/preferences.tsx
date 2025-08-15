@@ -270,7 +270,7 @@ const PreferenceSettings: React.FC = () => {
 
           {/* 自定义输入 */}
           {(currentQuestion.type === 'input' || currentQuestion.type === 'mixed') && (
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3  }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>
                 或者添加你的想法：
               </Typography>
@@ -298,18 +298,29 @@ const PreferenceSettings: React.FC = () => {
                   sx={{
                     bgcolor: '#ff5a5e',
                     color: '#ffffff',
+                    height: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    alignSelf: 'center',
                     '&:hover': {
                       bgcolor: '#e64549',
                     },
                   }}
                   onClick={handleSendCustomInput}
                 >
-                  <MicIcon />
+                  <MicIcon
+                    // 自适应填充
+                    
+                  />
                 </IconButton>
                 <IconButton
                   sx={{
                     bgcolor: '#ff5a5e',
                     color: '#ffffff',
+                    height: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    alignSelf: 'center',
                     '&:hover': {
                       bgcolor: '#e64549',
                     },
