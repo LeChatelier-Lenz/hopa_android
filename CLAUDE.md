@@ -4,22 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**合拍 Hopa** – 让计划一拍即合的 AI 共识工具
+**合拍 Hopa** – 让计划一拍即合的游戏化 AI 共识工具
 
 ### Product Description
-Hopa is an AI-powered relationship consensus tool that helps couples, friends, or family members quickly find mutually satisfactory solutions when facing disagreements about plans and decisions.
+Hopa is a gamified AI-powered relationship consensus tool that transforms conflict resolution into a collaborative RPG-style adventure. Users create virtual characters, equip preference items, and cooperatively battle "disagreement monsters" to reach mutually satisfactory solutions.
 
 ### Core Features
-- **Emotion-Safe Consensus Dialogue**: Guide users to express needs structurally without direct confrontation
-- **AI Draft Generation**: Intelligently analyze both parties' inputs to quickly generate plans that accommodate both needs
-- **Gamified Conflict Resolution**: Use lightweight interactive mechanisms (spin wheels, cards, mini-games) to reduce emotional cost of compromise
-- **Consensus Card Memory**: Record reached agreements as shareable visual cards with ceremonial feel
+- **Character Creation & Customization**: Users create personalized game avatars and select preference equipment (Budget Amulet, Time Compass, Priority Shield, etc.)
+- **AI Monster Generation**: System analyzes conflicts and generates themed "disagreement monsters" (Budget Beast, Time Dragon, Priority Spider, Taste Goblin)
+- **Cooperative Battle System**: Interactive Q&A combat where both parties answer questions to attack monsters together
+- **Consensus Treasure Chest**: Defeated monsters drop treasure chests containing shareable consensus cards and calendar-ready plans
+- **Gamified Conflict Resolution**: Transform potentially emotional negotiations into fun cooperative gameplay
 
 ### Typical Use Case
-A couple planning a vacation disagrees on destination, budget, and schedule. Hopa guides each person to fill in their desires ("want to take photos", "want to eat hotpot"). AI generates a draft plan considering both needs, then uses gamified interactions to resolve conflicts, finally creating a shareable "consensus card" to celebrate the agreement.
+A couple planning a vacation disagrees on destination, budget, and schedule. Each person creates a game character and selects equipment like "Budget Amulet" (sets spending limit) and "Adventure Compass" (preferred activities). AI generates monsters representing their conflicts: "Budget Beast" and "Schedule Dragon". Through cooperative combat - answering AI questions about preferences and compromises - they defeat the monsters together. Victory rewards them with a treasure chest containing a beautiful consensus card and a ready-to-use travel itinerary.
 
 ### Technical Foundation
-Ionic React application targeting Android via Capacitor, built with React 19, TypeScript, and Vite, designed for warm and ritualistic intimate relationship experiences.
+Ionic React application targeting Android via Capacitor, built with React 19, TypeScript, and Vite. Features gamified RPG-style interface with collaborative battle mechanics, designed for warm and ritualistic intimate relationship experiences. Core game mechanics powered by Phaser.js for battle scenes and interactive elements.
 
 ## Common Development Commands
 
@@ -53,6 +54,7 @@ Ionic React application targeting Android via Capacitor, built with React 19, Ty
 - **Build Tool**: Vite 5.2.0
 - **Mobile Framework**: Ionic React 8.5.0 + Capacitor 7.4.2
 - **UI Libraries**: Material-UI 7.3.1 (current), Ionicons 7.4.0
+- **Game Engine**: Phaser.js (recommended for battle scenes and interactive gameplay)
 - **Routing**: React Router 5.3.4 with Ionic React Router
 - **Testing**: Vitest (unit), Cypress (e2e)
 - **Linting**: ESLint 9 with TypeScript ESLint
@@ -75,12 +77,18 @@ Ionic React application targeting Android via Capacitor, built with React 19, Ty
 - **Framer Motion** (https://www.framer.com/motion/)
   - Smooth transitions, simple API calls
   - Perfect for gamified page interactions
-  - Use for: page transitions, card flips, spin wheel animations
+  - Use for: page transitions, card flips, character equipment animations
+
+#### Game Engine & Interactive Animations
+- **Phaser.js** (https://phaser.io)
+  - HTML5 game framework perfect for battle scenes and interactive elements
+  - Built-in physics, animation systems, and audio support
+  - Use for: battle scenes, character combat animations, monster AI, hit effects
 
 #### Rich Animations
 - **Lottie + LottieFiles** (https://lottiefiles.com)
   - Ready-made illustrations and animations for React
-  - Use for: celebration animations when generating consensus cards, ritual feel
+  - Use for: treasure chest opening, victory celebrations, character creation effects
 
 #### Style Customization
 - **Tailwind CSS** (https://tailwindcss.com)
@@ -89,27 +97,37 @@ Ionic React application targeting Android via Capacitor, built with React 19, Ty
 
 #### Recommended Architecture
 - **Ionic UI**: Mobile foundation (navigation, basic components)
-- **Chakra UI**: Advanced components (forms, dialogs)
+- **Chakra UI**: Advanced components (forms, dialogs, character customization)
+- **Phaser.js**: Game scenes (battle interface, character interactions, monster combat)
 - **Tailwind CSS**: Detail polishing
 - **Framer Motion + Lottie**: Animations and micro-interactions
-- Result: Fast development with warm, ceremonial, intimate relationship feel
+- Result: Fast development combining warm relationship feel with engaging RPG gameplay
 
 ### Project Structure
 ```
 src/
 ├── pages/              # Main application pages
-│   ├── home.tsx        # 首页 (Home) - Main entry point
-│   ├── group.tsx       # 共识圈子 (Consensus Creation) - AI consensus process
-│   ├── message.tsx     # 消息 (Messages) - Communication & history
-│   └── mine.tsx        # 个人主页 (Profile) - User settings & consensus cards
+│   ├── home.tsx        # 首页 (Home) - Main entry point, consensus initiation
+│   ├── group.tsx       # 共识圈子 (Consensus Creation) - Character creation, room management
+│   ├── message.tsx     # 消息 (Messages) - Communication & consensus history
+│   └── mine.tsx        # 个人主页 (Profile) - User settings & consensus card collection
 ├── components/         # Reusable components
-│   ├── consensus/      # Consensus-related components (planned)
+│   ├── game/          # Phaser.js game components (planned)
+│   │   ├── BattleScene.tsx    # Main battle interface
+│   │   ├── Character.tsx      # Character creation & customization
+│   │   ├── Equipment.tsx      # Preference equipment system
+│   │   └── Monster.tsx        # AI-generated conflict monsters
+│   ├── consensus/      # Consensus flow components (planned)
+│   │   ├── QuestionCard.tsx   # Interactive Q&A combat
+│   │   ├── TreasureChest.tsx  # Victory rewards system
+│   │   └── ProgressBar.tsx    # Battle progress & cooperation meter
 │   ├── cards/         # Consensus card components (planned)
-│   ├── games/         # Gamification components (planned)
 │   └── animations/    # Lottie/Framer Motion components (planned)
 ├── theme/             # Ionic theme customization
 ├── hooks/             # Custom React hooks (planned)
 ├── services/          # AI API integration (planned)
+│   ├── aiService.ts   # AI monster generation & battle logic
+│   └── gameService.ts # Game state management
 └── App.tsx            # Main app with tab-based navigation
 
 android/               # Native Android project
@@ -139,23 +157,24 @@ dist/                  # Build output (webDir in Capacitor config)
 ### Code Conventions
 - Use functional React components with TypeScript
 - Follow Ionic page structure patterns
-- **UI Component Priority**: Ionic UI (foundation) → Chakra UI (advanced) → Tailwind (details)
-- **Animation Approach**: Framer Motion for interactions, Lottie for celebrations
-- **Design Principles**: Warm, gentle, ritualistic feel for intimate relationships
+- **UI Component Priority**: Ionic UI (foundation) → Chakra UI (advanced) → Phaser.js (game) → Tailwind (details)
+- **Animation Approach**: Phaser.js for battle animations, Framer Motion for transitions, Lottie for celebrations
+- **Design Principles**: Warm, gentle, ritualistic feel with engaging RPG gameplay elements
 - CSS files co-located with components
 - Chinese text for user-facing labels
-- Semantic component naming for consensus flow (e.g., ConsensusCard, AgreementWheel)
+- Semantic component naming for game flow (e.g., BattleScene, TreasureChest, CharacterEquipment, ConflictMonster)
 
 ### Development Priorities
-1. **Consensus Flow**: Multi-step guided process for conflict resolution
-2. **AI Integration**: Backend API for generating compromise solutions
-3. **Gamification**: Interactive elements to reduce negotiation friction
-4. **Consensus Cards**: Visual celebration of reached agreements
-5. **Smooth Animations**: Enhance emotional experience during sensitive conversations
+1. **Character Creation System**: Avatar customization and preference equipment selection
+2. **Battle Scene Implementation**: Phaser.js-powered cooperative combat interface
+3. **AI Monster Generation**: Backend system for creating conflict-themed creatures
+4. **Interactive Combat Q&A**: Question-based battle mechanics with real-time cooperation scoring
+5. **Treasure Chest & Rewards**: Victory celebration system with consensus cards and calendar integration
+6. **Room Management**: Multi-user session handling and invitation system
 
 ### UI/UX Guidelines
-- Prioritize emotional safety in conflict resolution flows
-- Use warm colors and gentle transitions
-- Implement micro-interactions to celebrate small wins
-- Design for couples/friends using the app together
-- Ensure accessibility for different relationship dynamics
+- **Emotional Safety Through Gamification**: Transform conflicts into collaborative adventures to reduce confrontation
+- **Cooperative RPG Aesthetics**: Use warm colors, gentle transitions, and RPG-style visual elements (health bars, equipment icons, treasure chests)
+- **Celebration-Focused Interactions**: Emphasize victory animations, treasure discoveries, and achievement unlocks
+- **Social Gaming Design**: Optimize for multiple users interacting with the same device or sharing screens
+- **Accessibility Across Relationship Types**: Ensure game mechanics work equally well for couples, friends, family members, and colleagues
