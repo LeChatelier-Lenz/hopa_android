@@ -135,6 +135,8 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
   const isHost = currentUser?.isHost || false;
   const readyCount = members.filter(m => m.status === 'ready').length;
   const onlineCount = members.filter(m => m.status === 'online' || m.status === 'ready').length;
+  // 只有所有在线成员都准备好才能开始游戏
+  const canStartGame = onlineCount > 0 && readyCount === onlineCount;
 
   // 自动滚动到聊天底部
   useEffect(() => {
@@ -199,6 +201,24 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
             type: 'system',
           }]);
         }, 3000);
+        
+        // 让李四也在6秒后准备好
+        setTimeout(() => {
+          setMembers(prev => prev.map(member => 
+            member.id === 'user2' 
+              ? { ...member, status: 'ready' as const }
+              : member
+          ));
+          
+          setChatMessages(prev => [...prev, {
+            id: Date.now().toString() + '_lisiready',
+            senderId: 'system',
+            senderName: '系统',
+            content: '李四已准备就绪',
+            timestamp: new Date(),
+            type: 'system',
+          }]);
+        }, 6000);
       }, 2000);
     }, 3000);
 
@@ -300,25 +320,23 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
         type: 'system',
       }]);
       
-      // 随机准备
-      if (Math.random() > 0.5) {
-        setTimeout(() => {
-          setMembers(prev => prev.map(member => 
-            member.id === `pending_${friendId}` 
-              ? { ...member, status: 'ready' as const }
-              : member
-          ));
-          
-          setChatMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            senderId: 'system',
-            senderName: '系统',
-            content: `${friend.name}已准备就绪`,
-            timestamp: new Date(),
-            type: 'system',
-          }]);
-        }, 2000 + Math.random() * 3000);
-      }
+      // 自动准备（赵六、钱七等邀请的成员应该自动准备）
+      setTimeout(() => {
+        setMembers(prev => prev.map(member => 
+          member.id === `pending_${friendId}` 
+            ? { ...member, status: 'ready' as const }
+            : member
+        ));
+        
+        setChatMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          senderId: 'system',
+          senderName: '系统',
+          content: `${friend.name}已准备就绪`,
+          timestamp: new Date(),
+          type: 'system',
+        }]);
+      }, 1000 + Math.random() * 2000); // 1-3秒后自动准备
     }, 2000 + Math.random() * 3000);
     
     // 关闭邀请对话框
@@ -767,22 +785,28 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
               size="large"
               startIcon={<PlayArrow />}
               onClick={onStartGame}
-              disabled={readyCount < 2} // 至少需要2个人准备好
+              disabled={!canStartGame} // 所有在线成员都必须准备好
               sx={{
-                background: 'linear-gradient(45deg, #ff5a5e, #ff7a7e)',
+                background: canStartGame 
+                  ? 'linear-gradient(45deg, #ff5a5e, #ff7a7e)' 
+                  : '#ccc',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #ff4a4e, #ff6a6e)',
+                  background: canStartGame 
+                    ? 'linear-gradient(45deg, #ff4a4e, #ff6a6e)' 
+                    : '#ccc',
                 },
                 '&:disabled': {
                   background: '#ccc',
+                  color: '#666',
                 },
                 px: { xs: 2, sm: 4 },
                 py: { xs: 1, sm: 1.5 },
                 fontSize: { xs: '0.9rem', sm: '1.1rem' },
                 fontWeight: 600,
+                transition: 'all 0.3s ease',
               }}
             >
-              开始游戏 ({readyCount}/{onlineCount})
+              {canStartGame ? '🎮 开始游戏' : `等待准备 (${readyCount}/${onlineCount})`}
             </Button>
           )}
         </Box>

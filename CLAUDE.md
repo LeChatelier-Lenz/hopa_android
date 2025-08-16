@@ -54,8 +54,9 @@ Ionic React application targeting Android via Capacitor, built with React 19, Ty
 - **Build Tool**: Vite 5.2.0
 - **Mobile Framework**: Ionic React 8.5.0 + Capacitor 7.4.2
 - **UI Libraries**: Material-UI 7.3.1 (current), Ionicons 7.4.0
-- **Game Engine**: Phaser.js (recommended for battle scenes and interactive gameplay)
+- **Game Engine**: Phaser.js 3.70+ (for battle scenes and interactive gameplay)
 - **Routing**: React Router 5.3.4 with Ionic React Router
+- **Data Storage**: localStorage (character persistence, game progress)
 - **Testing**: Vitest (unit), Cypress (e2e)
 - **Linting**: ESLint 9 with TypeScript ESLint
 
@@ -165,12 +166,17 @@ dist/                  # Build output (webDir in Capacitor config)
 - Semantic component naming for game flow (e.g., BattleScene, TreasureChest, CharacterEquipment, ConflictMonster)
 
 ### Development Priorities
-1. **Character Creation System**: Avatar customization and preference equipment selection
-2. **Battle Scene Implementation**: Phaser.js-powered cooperative combat interface
-3. **AI Monster Generation**: Backend system for creating conflict-themed creatures
-4. **Interactive Combat Q&A**: Question-based battle mechanics with real-time cooperation scoring
-5. **Treasure Chest & Rewards**: Victory celebration system with consensus cards and calendar integration
-6. **Room Management**: Multi-user session handling and invitation system
+1. ✅ **Room Management**: Multi-user session handling, invitation system, real-time chat, resizable interface
+   - ✅ Real-time chat with auto-scroll and system notifications
+   - ✅ Member grid layout with status indicators (online/offline/ready/invited)
+   - ✅ Dual-mode invitation (link sharing + friend invitation)
+   - ✅ Resizable chat area with drag handle
+   - ✅ Ready state logic: all online members must be ready to start
+2. 🚧 **Character Creation System**: Avatar customization and preference equipment selection (next)
+3. 🚧 **Battle Scene Implementation**: Phaser.js-powered cooperative combat interface (next)
+4. **AI Monster Generation**: Backend system for creating conflict-themed creatures
+5. **Interactive Combat Q&A**: Question-based battle mechanics with real-time cooperation scoring
+6. **Treasure Chest & Rewards**: Victory celebration system with consensus cards and calendar integration
 
 ### UI/UX Guidelines
 - **Emotional Safety Through Gamification**: Transform conflicts into collaborative adventures to reduce confrontation
@@ -178,3 +184,31 @@ dist/                  # Build output (webDir in Capacitor config)
 - **Celebration-Focused Interactions**: Emphasize victory animations, treasure discoveries, and achievement unlocks
 - **Social Gaming Design**: Optimize for multiple users interacting with the same device or sharing screens
 - **Accessibility Across Relationship Types**: Ensure game mechanics work equally well for couples, friends, family members, and colleagues
+
+## 🎮 西湖约会主题游戏设计
+
+### 角色装备系统
+- 🧿 **预算护符**: 设定消费上限 (50-500元档位)
+- 🧭 **时间指南针**: 游玩时长偏好 (半天/全天/过夜)
+- 🛡️ **景点盾牌**: 景点偏好排序 (雷峰塔、苏堤、断桥残雪)
+- 🍜 **美食宝珠**: 餐饮偏好 (杭帮菜、网红店、特色小吃)
+
+### 分歧怪物设计
+**怪物生成逻辑**: 根据情侣装备差异自动生成对应主题怪物
+
+- 🦁 **预算狮王**: 触发于预算护符设置差异过大，金色狮子+金币雨攻击
+- 🐉 **时间安排龙**: 触发于时间指南针冲突，蓝色时间龙+时间漩涡攻击
+- 🕷️ **景点选择蛛**: 触发于景点盾牌优先级差异，彩色蜘蛛+网络陷阱
+- 👹 **美食口味鬼**: 触发于美食宝珠选择不同，可爱食物造型+食物投掷
+
+### 战斗场景设计
+- **背景**: 西湖美景 (雷峰塔、断桥、苏堤等地标)
+- **角色站位**: 情侣角色站在右侧，面向左侧怪物
+- **攻击机制**: 问答式合作战斗，一致性越高伤害越大
+- **胜利奖励**: 西湖约会计划卡 + 个性化推荐路线
+
+### 游戏流程设计
+1. **角色创建+装备**: 统一页面完成角色设定和装备选择
+2. **冲突分析**: 根据装备差异生成对应怪物
+3. **合作战斗**: Phaser.js渲染战斗场景，问答式攻击机制
+4. **胜利奖励**: 宝箱开启动画+共识卡片生成+实用计划输出
