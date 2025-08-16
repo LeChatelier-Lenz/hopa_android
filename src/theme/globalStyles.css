@@ -44,8 +44,8 @@
 
 /* 按钮渐变 */
 .gradient-button-primary {
-  background: linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%);
-  box-shadow: 0 4px 15px rgba(255, 90, 94, 0.4);
+  background: linear-gradient(87.06deg, #FF595D 2.17%, #FF782A 98.04%);
+  box-shadow: 0px 4.23561px 4.23561px rgba(0, 0, 0, 0.25);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

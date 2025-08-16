@@ -10,6 +10,27 @@ export default defineConfig({
     react(),
     legacy()
   ],
+  build: {
+    rollupOptions: {
+      maxParallelFileOps: 1,
+      output: {
+        manualChunks: {
+          // 将Material-UI分离到单独的chunk
+          'mui': ['@mui/material', '@mui/icons-material'],
+          // 将React相关库分离
+          'react-vendor': ['react', 'react-dom'],
+          // 将Ionic相关库分离
+          'ionic-vendor': ['@ionic/react', '@ionic/react-router'],
+          // 将路由相关库分离
+          'router-vendor': ['react-router', 'react-router-dom'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // 提高警告阈值到1MB
+  },
+  optimizeDeps: {
+    include: ['@mui/material', '@mui/icons-material'],
+  },
   server: {
     proxy: {
       '/api/doubao': {

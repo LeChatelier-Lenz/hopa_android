@@ -169,7 +169,7 @@ const Message: React.FC = () => {
           >
             <UserAvatar
               username={message.user.name}
-              src={message.user.avatar}
+              // src={message.user.avatar}
               size="small"
             />
           </Badge>
