@@ -325,7 +325,7 @@ export class Monster {
     // 金币雨攻击
     for (let i = 0; i < 15; i++) {
       const coin = this.scene.add.graphics();
-      coin.setPosition(Phaser.Math.Between(0, 800), -20);
+      coin.setPosition(Phaser.Math.Between(0, 375), -20);
       coin.fillStyle(0xFFD700);
       coin.fillCircle(0, 0, 10);
 

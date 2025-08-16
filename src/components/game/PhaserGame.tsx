@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
+import { MapScene } from './scenes/MapScene';
 import { BattleScene } from './scenes/BattleScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { Box, Typography } from '@mui/material';
@@ -10,6 +11,11 @@ interface PhaserGameProps {
     player1Config: any;
     player2Config: any;
     monsters: any[];
+    backgroundUrl?: string | null;
+    consensusTheme?: {
+      title: string;
+      description: string;
+    };
   };
 }
 
@@ -23,14 +29,14 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
     if (!gameRef.current) return;
 
     try {
-      // Phaser游戏配置
+      // Phaser游戏配置 - 竖屏移动端优化
       const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        width: 375,
+        height: 667,
         parent: gameRef.current,
         backgroundColor: '#87CEEB', // 天空蓝背景
-        scene: [BattleScene, VictoryScene],
+        scene: [MapScene, BattleScene, VictoryScene],
         physics: {
           default: 'arcade',
           arcade: {
@@ -39,10 +45,12 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
           },
         },
         scale: {
-          mode: Phaser.Scale.FIT,
+          mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: 800,
-          height: 600,
+          width: 375,
+          height: 667,
+          min: { width: 300, height: 500 },
+          max: { width: 500, height: 900 },
         },
         render: {
           antialias: true,
@@ -60,6 +68,14 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         
         // 传递游戏数据到场景
         if (gameData && phaserGameRef.current) {
+          const mapScene = phaserGameRef.current.scene.getScene('MapScene') as MapScene;
+          if (mapScene) {
+            mapScene.setMapData({
+              characters: [gameData.player1Config, gameData.player2Config],
+              monsters: gameData.monsters || []
+            });
+          }
+
           const battleScene = phaserGameRef.current.scene.getScene('BattleScene') as BattleScene;
           if (battleScene) {
             battleScene.setGameData(gameData);
@@ -68,10 +84,25 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
 
         // 设置游戏事件监听
         if (onGameEvent && phaserGameRef.current) {
+          const mapScene = phaserGameRef.current.scene.getScene('MapScene') as MapScene;
+          if (mapScene) {
+            mapScene.setEventCallback(onGameEvent);
+          }
+
           const battleScene = phaserGameRef.current.scene.getScene('BattleScene') as BattleScene;
           if (battleScene) {
             battleScene.setEventCallback(onGameEvent);
           }
+          
+          const victoryScene = phaserGameRef.current.scene.getScene('VictoryScene') as VictoryScene;
+          if (victoryScene) {
+            victoryScene.setEventCallback(onGameEvent);
+          }
+        }
+
+        // 启动MapScene作为第一个场景
+        if (phaserGameRef.current) {
+          phaserGameRef.current.scene.start('MapScene');
         }
       });
 
@@ -133,10 +164,13 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
     <Box
       sx={{
         position: 'relative',
+        width: '100%',
+        height: '100%',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: 600,
+        minHeight: '100vh',
+        overflow: 'hidden',
       }}
     >
       {isLoading && (
@@ -160,7 +194,7 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
             🎮 游戏加载中...
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            正在初始化西湖约会战斗场景
+            正在初始化共识征程战斗场景
           </Typography>
         </Box>
       )}
@@ -169,10 +203,12 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         ref={gameRef}
         style={{
           width: '100%',
-          height: '100%',
-          borderRadius: '8px',
+          maxWidth: '375px',
+          height: '100vh',
+          maxHeight: '667px',
+          borderRadius: '0',
           overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          margin: '0 auto',
         }}
       />
     </Box>
