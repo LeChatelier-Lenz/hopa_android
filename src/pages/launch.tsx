@@ -39,8 +39,10 @@ import {
   Link,
   Chat,
   ArrowBack,
+  People,
 } from '@mui/icons-material';
 import { useHistory } from 'react-router-dom';
+import ConsensusRoom from '../components/ConsensusRoom';
 import './launch.css';
 
 interface Friend {
@@ -54,6 +56,7 @@ interface ConsensusGoal {
   title: string;
   description: string;
   attachments: File[];
+  maxParticipants: number;
 }
 
 const LaunchPage: React.FC = () => {
@@ -64,13 +67,12 @@ const LaunchPage: React.FC = () => {
     title: '',
     description: '',
     attachments: [],
+    maxParticipants: 5,
   });
-  const [inviteType, setInviteType] = useState<'link' | 'friends'>('link');
-  const [showInvitePanel, setShowInvitePanel] = useState(false);
-  const [isWaiting, setIsWaiting] = useState(false);
-  const [waitingProgress, setWaitingProgress] = useState(0);
+  const [participantsInput, setParticipantsInput] = useState('5');
   const [showGameButton, setShowGameButton] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [roomId] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
 
   // 模拟好友列表
   const friends: Friend[] = [
@@ -83,8 +85,7 @@ const LaunchPage: React.FC = () => {
   const steps = [
     '确定共识目标',
     '上传相关文件',
-    '邀请共识搭档',
-    '等待确认',
+    '创建房间',
     '开始游戏',
   ];
 
@@ -100,27 +101,15 @@ const LaunchPage: React.FC = () => {
     // 这里可以添加实际的语音录制逻辑
   };
 
-  // 处理邀请类型切换
-  const handleInviteTypeChange = (type: 'link' | 'friends') => {
-    setInviteType(type);
-    setShowInvitePanel(true);
-  };
-
-  // 处理邀请好友
-  const handleInviteFriend = (friendId: string) => {
-    console.log('邀请好友:', friendId);
-    // 这里可以添加实际的邀请逻辑
-  };
-
-  // 处理分享链接
-  const handleShareLink = (platform: string) => {
-    console.log('分享到:', platform);
-    // 这里可以添加实际的分享逻辑
-  };
 
   // 处理返回首页
   const handleGoBack = () => {
     history.push('/home');
+  };
+
+  // 处理离开房间
+  const handleLeaveRoom = () => {
+    setActiveStep(2); // 回到创建房间阶段
   };
 
   // 处理进入游戏
@@ -130,23 +119,6 @@ const LaunchPage: React.FC = () => {
     history.push('/game');
   };
 
-  // 等待动画效果
-  useEffect(() => {
-    if (isWaiting) {
-      const interval = setInterval(() => {
-        setWaitingProgress(prev => {
-          if (prev >= 100) {
-            setIsWaiting(false);
-            setShowGameButton(true);
-            return 100;
-          }
-          return prev + 2;
-        });
-      }, 100);
-
-      return () => clearInterval(interval);
-    }
-  }, [isWaiting]);
 
   // 处理下一步
   const handleNext = () => {
@@ -155,12 +127,8 @@ const LaunchPage: React.FC = () => {
     }
     
     if (activeStep === 1) {
-      // 进入邀请阶段
+      // 进入创建房间阶段
       setActiveStep(2);
-    } else if (activeStep === 2) {
-      // 开始等待
-      setIsWaiting(true);
-      setActiveStep(3);
     } else {
       setActiveStep(prev => prev + 1);
     }
@@ -199,6 +167,30 @@ const LaunchPage: React.FC = () => {
               rows={4}
               required
             />
+            
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <People sx={{ color: '#666' }} />
+              <Typography variant="body2" sx={{ color: '#666', minWidth: 80 }}>
+                参与人数:
+              </Typography>
+              <TextField
+                type="number"
+                value={participantsInput}
+                onChange={(e) => setParticipantsInput(e.target.value)}
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value);
+                  const validValue = isNaN(value) ? 2 : Math.min(10, Math.max(2, value));
+                  setParticipantsInput(validValue.toString());
+                  setConsensusGoal(prev => ({ ...prev, maxParticipants: validValue }));
+                }}
+                inputProps={{ min: 2, max: 10 }}
+                size="small"
+                sx={{ width: 80 }}
+              />
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                人 (上限10人)
+              </Typography>
+            </Box>
             
             <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
               <Button
@@ -259,7 +251,14 @@ const LaunchPage: React.FC = () => {
                 variant="outlined"
                 startIcon={<Upload />}
                 component="label"
-                sx={{ minWidth: 120 }}
+                sx={{ 
+                  minWidth: 120,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                }}
               >
                 选择文件
                 <input
@@ -275,7 +274,14 @@ const LaunchPage: React.FC = () => {
                 variant="outlined"
                 startIcon={<Upload />}
                 component="label"
-                sx={{ minWidth: 120 }}
+                sx={{ 
+                  minWidth: 120,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                }}
               >
                 选择图片
                 <input
@@ -293,17 +299,87 @@ const LaunchPage: React.FC = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   已上传的文件 ({selectedFiles.length}):
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                   {selectedFiles.map((file, index) => (
-                    <Card key={index} sx={{ width: 120, height: 120, position: 'relative' }}>
-                      <CardContent sx={{ p: 1, textAlign: 'center' }}>
-                        <Typography variant="caption" noWrap>
+                    <Card 
+                      key={index} 
+                      sx={{ 
+                        width: 140, 
+                        height: 100, 
+                        position: 'relative',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        {/* 文件图标或预览 */}
+                        <Box sx={{ textAlign: 'center', mb: 1 }}>
+                          {file.type.startsWith('image/') ? (
+                            <Box 
+                              sx={{ 
+                                width: 40, 
+                                height: 40, 
+                                mx: 'auto', 
+                                borderRadius: 1,
+                                bgcolor: '#f5f5f5',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
+                                IMG
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Box 
+                              sx={{ 
+                                width: 40, 
+                                height: 40, 
+                                mx: 'auto', 
+                                borderRadius: 1,
+                                bgcolor: '#e3f2fd',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
+                                {file.name.split('.').pop()?.toUpperCase()}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            textAlign: 'center',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
                           {file.name}
                         </Typography>
+                        
                         <IconButton
                           size="small"
                           onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
-                          sx={{ position: 'absolute', top: 0, right: 0 }}
+                          sx={{ 
+                            position: 'absolute', 
+                            top: 4, 
+                            right: 4,
+                            bgcolor: 'rgba(255, 255, 255, 0.9)',
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 90, 94, 0.1)',
+                              color: '#ff5a5e',
+                            },
+                          }}
                         >
                           <Close fontSize="small" />
                         </IconButton>
@@ -318,244 +394,56 @@ const LaunchPage: React.FC = () => {
 
       case 2:
         return (
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              邀请共识搭档
+              创建房间
             </Typography>
             
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Button
-                variant={inviteType === 'link' ? 'contained' : 'outlined'}
-                startIcon={<Share />}
-                onClick={() => handleInviteTypeChange('link')}
-                fullWidth
-              >
-                生成分享链接
-              </Button>
-              
-              <Button
-                variant={inviteType === 'friends' ? 'contained' : 'outlined'}
-                startIcon={<PersonAdd />}
-                onClick={() => handleInviteTypeChange('friends')}
-                fullWidth
-              >
-                邀请好友
-              </Button>
+            <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
+              准备创建共识房间，开始你们的共识征程！
+            </Typography>
+            
+            <Box sx={{ 
+              p: 3, 
+              border: '2px dashed #ff5a5e', 
+              borderRadius: 2, 
+              bgcolor: 'rgba(255, 90, 94, 0.05)',
+              mb: 3 
+            }}>
+              <Typography variant="body2" sx={{ color: '#ff5a5e', fontWeight: 500 }}>
+                房间信息预览
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                标题: {consensusGoal.title}
+              </Typography>
+              <Typography variant="body2">
+                参与人数: {consensusGoal.maxParticipants}人
+              </Typography>
             </Box>
             
-            {showInvitePanel && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  maxHeight: '60vh',
-                  zIndex: 1000,
-                  animation: 'slideUp 0.3s ease-out',
-                  '@keyframes slideUp': {
-                    from: { transform: 'translateY(100%)' },
-                    to: { transform: 'translateY(0)' },
-                  },
-                }}
-              >
-                {inviteType === 'link' ? (
-                  <Box sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">分享链接</Typography>
-                      <IconButton onClick={() => setShowInvitePanel(false)}>
-                        <Close />
-                      </IconButton>
-                    </Box>
-                    
-                    <TextField
-                      fullWidth
-                      value="https://hopa.app/consensus/abc123"
-                      variant="outlined"
-                      InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                          <IconButton>
-                            <Link />
-                          </IconButton>
-                        ),
-                      }}
-                      sx={{ mb: 2 }}
-                    />
-                    
-                    <Typography variant="subtitle2" gutterBottom>
-                      分享到:
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {/* <Button
-                        variant="outlined"
-                        startIcon={<Wechat />}
-                        onClick={() => handleShareLink('wechat')}
-                      >
-                        微信
-                      </Button> */}
-                      <Button
-                        variant="outlined"
-                        startIcon={<Chat />}
-                        onClick={() => handleShareLink('chat')}
-                      >
-                        Chat
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<WhatsApp />}
-                        onClick={() => handleShareLink('whatsapp')}
-                      >
-                        WhatsApp
-                      </Button>
-                      {/* <Button
-                        variant="outlined"
-                        startIcon={<Qq />}
-                        onClick={() => handleShareLink('qq')}
-                      >
-                        QQ
-                      </Button> */}
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">选择好友</Typography>
-                      <IconButton onClick={() => setShowInvitePanel(false)}>
-                        <Close />
-                      </IconButton>
-                    </Box>
-                    
-                    <List>
-                      {friends.map((friend) => (
-                        <ListItem key={friend.id}>
-                          <ListItemAvatar>
-                            <Avatar src={friend.avatar} />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={friend.name}
-                            secondary={friend.status === 'online' ? '在线' : '离线'}
-                          />
-                          <ListItemSecondaryAction>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => handleInviteFriend(friend.id)}
-                            >
-                              邀请
-                            </Button>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                )}
-              </Paper>
-            )}
+            <Typography variant="body2" color="text.secondary">
+              点击"创建房间"后，你将成为房主，可以邀请其他人加入
+            </Typography>
           </Box>
         );
 
       case 3:
         return (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              等待共识搭档确认
-            </Typography>
-            
-            {isWaiting ? (
-              <Box sx={{ mt: 4 }}>
-                <Box
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(45deg, #ff5a5e, #ff7a7e)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto',
-                    animation: 'pulse 2s ease-in-out infinite',
-                    '@keyframes pulse': {
-                      '0%, 100%': { transform: 'scale(1)' },
-                      '50%': { transform: 'scale(1.1)' },
-                    },
-                  }}
-                >
-                  <Group sx={{ fontSize: 48, color: 'white' }} />
-                </Box>
-                
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                  正在等待共识搭档加入...
-                </Typography>
-                
-                <Box sx={{ mt: 2, width: '100%', maxWidth: 300, mx: 'auto' }}>
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: 8,
-                      backgroundColor: 'grey.200',
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: `${waitingProgress}%`,
-                        height: '100%',
-                        backgroundColor: '#ff5a5e',
-                        transition: 'width 0.1s ease',
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {waitingProgress}% 完成
-                  </Typography>
-                </Box>
-              </Box>
-            ) : (
-              <Box sx={{ mt: 4 }}>
-                <Typography variant="body1" color="success.main">
-                  所有共识搭档已确认！
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        );
-
-      case 4:
-        return (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              准备开始游戏
-            </Typography>
-            
-            <Typography variant="body1" sx={{ mb: 4 }}>
-              共识目标已确定，搭档已就位，准备开始有趣的共识达成游戏！
-            </Typography>
-            
-            <Fab
-              variant="extended"
-              color="primary"
-              size="large"
-              onClick={handleStartGame}
-              sx={{
-                background: 'linear-gradient(45deg, #ff5a5e, #ff7a7e)',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #ff4a4e, #ff6a6e)',
-                },
-              }}
-            >
-              <PlayArrow sx={{ mr: 1 }} />
-              进入游戏
-            </Fab>
-          </Box>
+          <ConsensusRoom
+            roomId={roomId}
+            consensusTitle={consensusGoal.title}
+            maxParticipants={consensusGoal.maxParticipants}
+            currentUserId="user1" // 假设当前用户是user1
+            onStartGame={handleStartGame}
+            onLeaveRoom={handleLeaveRoom}
+          />
         );
 
       default:
         return null;
     }
   };
+
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -599,11 +487,27 @@ const LaunchPage: React.FC = () => {
 
       {/* 内容区域 */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {renderStepContent()}
+        <Box
+          sx={{
+            animation: 'fadeInSlide 0.5s ease-out',
+            '@keyframes fadeInSlide': {
+              from: {
+                opacity: 0,
+                transform: 'translateY(20px)',
+              },
+              to: {
+                opacity: 1,
+                transform: 'translateY(0)',
+              },
+            },
+          }}
+        >
+          {renderStepContent()}
+        </Box>
       </Box>
 
       {/* 底部操作按钮 */}
-      {activeStep < 4 && (
+      {activeStep < 3 && (
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
@@ -627,7 +531,7 @@ const LaunchPage: React.FC = () => {
                 },
               }}
             >
-              {activeStep === steps.length - 2 ? '完成' : '下一步'}
+              {activeStep === 2 ? '创建房间' : '下一步'}
             </Button>
           </Box>
         </Box>
