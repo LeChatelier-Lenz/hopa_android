@@ -73,13 +73,37 @@ const Home: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#ff5a5e', '--color': '#ffffff' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2 }}>
+        <IonToolbar style={{ 
+          '--background': 'linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%)', 
+          '--color': '#ffffff',
+          '--min-height': '80px',
+          '--padding-top': '16px',
+          '--padding-bottom': '16px',
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            px: 2,
+            height: '100%',
+          }}>
             <UserAvatar username="张三" size="small" />
-            <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 600 }}>
+            <Typography variant="h3" sx={{ 
+              color: '#ffffff', 
+              fontWeight: 700,
+              textAlign: 'center',
+              flex: 1,
+              fontSize: { xs: '1.5rem', sm: '1.75rem' },
+            }}>
               合拍 Hopa
             </Typography>
-            <IconButton sx={{ color: '#ffffff' }}>
+            <IconButton sx={{ 
+              color: '#ffffff',
+              background: 'rgba(255, 255, 255, 0.1)',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.2)',
+              }
+            }}>
               <SettingsIcon />
             </IconButton>
           </Box>
@@ -94,16 +118,15 @@ const Home: React.FC = () => {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleLaunchConsensus}
+              className="gradient-button-primary"
               sx={{
-                bgcolor: '#ff5a5e',
                 borderRadius: 3,
                 px: 4,
                 py: 1.5,
                 fontSize: '1.1rem',
                 fontWeight: 600,
-                boxShadow: '0 4px 12px rgba(255, 90, 94, 0.3)',
                 '&:hover': {
-                  bgcolor: '#e64549',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
@@ -114,6 +137,7 @@ const Home: React.FC = () => {
           {/* 切换栏 */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs 
+              centered
               value={tabValue} 
               onChange={handleTabChange}
               sx={{
@@ -138,7 +162,7 @@ const Home: React.FC = () => {
           {/* 共识看板内容 */}
           <TabPanel value={tabValue} index={0}>
             {/* 当前共识卡片 */}
-            <Card sx={{ mb: 3, cursor: 'pointer', '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.12)' } }}>
+            <Card className="gradient-card" sx={{ mb: 3, cursor: 'pointer' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#333' }}>
@@ -147,9 +171,8 @@ const Home: React.FC = () => {
                   <Chip 
                     label={mockConsensusData.status} 
                     size="small"
+                    className="gradient-chip"
                     sx={{ 
-                      bgcolor: '#ff5a5e', 
-                      color: '#ffffff',
                       fontWeight: 500,
                     }}
                   />
@@ -177,12 +200,12 @@ const Home: React.FC = () => {
                   <LinearProgress 
                     variant="determinate" 
                     value={mockConsensusData.progress}
+                    className="gradient-progress"
                     sx={{
                       height: 8,
                       borderRadius: 4,
                       bgcolor: '#f0f0f0',
                       '& .MuiLinearProgress-bar': {
-                        bgcolor: '#ff5a5e',
                         borderRadius: 4,
                       },
                     }}
@@ -197,7 +220,7 @@ const Home: React.FC = () => {
             </Typography>
             
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Card sx={{ flex: 1, cursor: 'pointer', '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.12)' } }}>
+              <Card className="gradient-card" sx={{ flex: 1, cursor: 'pointer' }}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <TrendingUpIcon sx={{ fontSize: 40, color: '#ff5a5e', mb: 1 }} />
                   <Typography variant="h4" sx={{ fontWeight: 700, color: '#ff5a5e', mb: 0.5 }}>

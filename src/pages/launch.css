@@ -156,6 +156,25 @@
   justify-content: center;
 }
 
+/* 背景图片区域样式 */
+.background-header {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* 内容卡片样式增强 */
+.gradient-card {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 90, 94, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
 /* 安全区域适配 */
 @supports (padding: max(0px)) {
   .launch-page {

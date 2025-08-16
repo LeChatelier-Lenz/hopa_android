@@ -43,6 +43,7 @@ import {
 } from '@mui/icons-material';
 import { useHistory } from 'react-router-dom';
 import ConsensusRoom from '../components/ConsensusRoom';
+import backgroundImage from '../assets/images/background.png';
 import './launch.css';
 
 interface Friend {
@@ -141,12 +142,13 @@ const LaunchPage: React.FC = () => {
 
   const renderStepContent = () => {
     switch (activeStep) {
-      case 0:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              确定需要达成的共识目标
-            </Typography>
+             case 0:
+         return (
+           <Box sx={{ p: 3 }}>
+             <Card className="gradient-card" sx={{ p: 3, mb: 3 }}>
+               <Typography variant="h6" gutterBottom sx={{ color: '#ff5a5e', fontWeight: 600 }}>
+                 确定需要达成的共识目标
+               </Typography>
             
             <TextField
               fullWidth
@@ -232,15 +234,17 @@ const LaunchPage: React.FC = () => {
                 ))}
               </Box>
             )}
-          </Box>
-        );
+             </Card>
+           </Box>
+         );
 
-      case 1:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              上传相关文件
-            </Typography>
+             case 1:
+         return (
+           <Box sx={{ p: 3 }}>
+             <Card className="gradient-card" sx={{ p: 3, mb: 3 }}>
+               <Typography variant="h6" gutterBottom sx={{ color: '#ff5a5e', fontWeight: 600 }}>
+                 上传相关文件
+               </Typography>
             
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               上传与共识相关的文件或图片，帮助大家更好地理解共识内容
@@ -389,15 +393,17 @@ const LaunchPage: React.FC = () => {
                 </Box>
               </Box>
             )}
-          </Box>
-        );
+             </Card>
+           </Box>
+         );
 
       case 2:
         return (
           <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              创建房间
-            </Typography>
+            <Card className="gradient-card" sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ color: '#ff5a5e', fontWeight: 600 }}>
+                创建房间
+              </Typography>
             
             <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
               准备创建共识房间，开始你们的共识征程！
@@ -424,8 +430,9 @@ const LaunchPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               点击"创建房间"后，你将成为房主，可以邀请其他人加入
             </Typography>
-          </Box>
-        );
+             </Card>
+           </Box>
+         );
 
       case 3:
         return (
@@ -447,35 +454,92 @@ const LaunchPage: React.FC = () => {
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* 头部 */}
-      <Box 
-        className="launch-header"
-        sx={{ p: 2, borderBottom: 1, borderColor: 'divider', position: 'relative' }}
+      {/* 背景图片顶部区域 */}
+      <Box
+        sx={{
+          position: 'relative',
+          height: '250px',
+          overflow: 'hidden',
+          background: '#ffffff',
+        }}
       >
-        <IconButton
-          className="back-button"
-          onClick={handleGoBack}
+        {/* 背景图片 */}
+        <Box
+          component="img"
+          src={backgroundImage}
+          alt="共识发起背景"
           sx={{
             position: 'absolute',
-            left: 16,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#666',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 90, 94, 0.1)',
-              color: '#ff5a5e',
-            },
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'fill',
+            objectPosition: 'center',
+          }}
+        />
+        
+        {/* 头部内容 */}
+        <Box 
+          className="launch-header"
+          sx={{ 
+            position: 'relative',
+            zIndex: 2,
+            p: 2, 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
           }}
         >
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h5" align="center">
-          发起共识
-        </Typography>
+          <IconButton
+            className="back-button"
+            onClick={handleGoBack}
+            sx={{
+              position: 'absolute',
+              left: 16,
+              top: '30%',
+              transform: 'translateY(-50%)',
+              color: '#ff5a5e',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 90, 94, 0.2)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 1)',
+                color: '#ff5a5e',
+                transform: 'translateY(-50%) scale(1.05)',
+              },
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          {/* <Typography 
+            variant="h4" 
+            align="center"
+            sx={{
+              color: '#ff5a5e',
+              fontWeight: 700,
+              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
+              fontSize: { xs: '1.5rem', sm: '2rem' },
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 90, 94, 0.2)',
+            }}
+          >
+            发起共识
+          </Typography> */}
+        </Box>
       </Box>
 
       {/* 步骤指示器 */}
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ 
+        p: 2, 
+        background: 'linear-gradient(135deg, #ffffff 0%, #fefefe 100%)',
+        borderBottom: '1px solid rgba(255, 90, 94, 0.1)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+      }}>
         <Stepper activeStep={activeStep} alternativeLabel>
           {steps.map((label) => (
             <Step key={label}>
@@ -486,7 +550,11 @@ const LaunchPage: React.FC = () => {
       </Box>
 
       {/* 内容区域 */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ 
+        flex: 1, 
+        overflow: 'auto',
+        background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+      }}>
         <Box
           sx={{
             animation: 'fadeInSlide 0.5s ease-out',
@@ -506,15 +574,28 @@ const LaunchPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 底部操作按钮 */}
+            {/* 底部操作按钮 */}
       {activeStep < 3 && (
-        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ 
+          p: 2, 
+          borderTop: '1px solid rgba(255, 90, 94, 0.1)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #fefefe 100%)',
+          boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+        }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
               onClick={handleBack}
               disabled={activeStep === 0}
               fullWidth
+              sx={{
+                borderColor: '#ff5a5e',
+                color: '#ff5a5e',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 90, 94, 0.08)',
+                  borderColor: '#ff4a4e',
+                },
+              }}
             >
               上一步
             </Button>
@@ -524,10 +605,10 @@ const LaunchPage: React.FC = () => {
               onClick={handleNext}
               disabled={activeStep === 0 && (!consensusGoal.title || !consensusGoal.description)}
               fullWidth
+              className="gradient-button-primary"
               sx={{
-                background: 'linear-gradient(45deg, #ff5a5e, #ff7a7e)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #ff4a4e, #ff6a6e)',
+                  transform: 'translateY(-1px)',
                 },
               }}
             >

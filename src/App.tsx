@@ -47,6 +47,12 @@ import InterestsOutlinedIcon from '@mui/icons-material/InterestsOutlined';
 import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 
+// 导入自定义图标
+import homeIcon from './assets/images/home_icon.png';
+import groupIcon from './assets/images/group_icon.png';
+import messageIcon from './assets/images/message_icon.png';
+import mineIcon from './assets/images/mypage_icon.png';
+
 /**
  * Ionic Dark Mode
  * -----------------------------------------------------
@@ -61,6 +67,7 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 import './fonts/fonts.css';
+import './theme/globalStyles.css';
 
 setupIonicReact();
 
@@ -134,25 +141,56 @@ const App: React.FC = () => {
                     '--ion-color-primary-contrast-rgb': '255, 255, 255',
                     '--ion-color-primary-shade': '#e64549',
                     '--ion-color-primary-tint': '#ff7a7e',
-                    borderTop: '1px solid #f0f0f0',
-                    paddingBottom: 'env(safe-area-inset-bottom)',
+                    background: 'linear-gradient(135deg,#ffffff 0%, #fefefe 100%)',
+                    borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.08)',
+                    height: '80px',
+                    paddingTop: '8px',
+                    paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
                   }}
                 >
-                  <IonTabButton tab="home" href="/home" style={{ '--color': '#666', '--color-selected': '#ff5a5e' }}>
-                    <HomeOutlinedIcon style={{ fontSize: 24 }} />
-                    <IonLabel>首页</IonLabel>
+                  <IonTabButton tab="home" href="/home" style={{ 
+                    '--color': '#8e8e93', 
+                    '--color-selected': '#ff5a5e',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    background: 'transparent',
+                    //背景透明，呈现导航栏底色
+                  }}>
+                    <img src={homeIcon} alt="首页" style={{ width: '60%', height: '60%', marginLeft: '4px',marginRight: '4px', 
+                      
+                    }} />
+                    <IonLabel style={{ fontSize: '14px', fontWeight: 500 }}>首页</IonLabel>
                   </IonTabButton>
-                  <IonTabButton tab="group" href="/group" style={{ '--color': '#666', '--color-selected': '#ff5a5e' }}>
-                    <InterestsOutlinedIcon style={{ fontSize: 24 }} />
-                    <IonLabel>共识圈子</IonLabel>
+                  <IonTabButton tab="group" href="/group" style={{ 
+                    '--color': '#8e8e93', 
+                    '--color-selected': '#ff5a5e',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    background: 'transparent',
+                  }}>
+                    <img src={groupIcon} alt="共识圈子" style={{ width: '60%', height: '60%', marginLeft: '4px',marginRight: '4px' }} />
+                    <IonLabel style={{ fontSize: '14px', fontWeight: 500 }}>共识圈子</IonLabel>
                   </IonTabButton>
-                  <IonTabButton tab="message" href="/message" style={{ '--color': '#666', '--color-selected': '#ff5a5e' }}>
-                    <SmsOutlinedIcon style={{ fontSize: 24 }} />
-                    <IonLabel>消息</IonLabel>
+                  <IonTabButton tab="message" href="/message" style={{ 
+                    '--color': '#8e8e93', 
+                    '--color-selected': '#ff5a5e',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    background: 'transparent',
+                  }}>
+                    <img src={messageIcon} alt="消息" style={{ width: '60%', height: '60%', marginLeft: '4px',marginRight: '4px' }} />
+                    <IonLabel style={{ fontSize: '14px', fontWeight: 500 }}>消息</IonLabel>
                   </IonTabButton>
-                  <IonTabButton tab="mine" href="/mine" style={{ '--color': '#666', '--color-selected': '#ff5a5e' }}>
-                    <PersonOutlineOutlinedIcon style={{ fontSize: 24 }} />
-                    <IonLabel>我的</IonLabel>
+                  <IonTabButton tab="mine" href="/mine" style={{ 
+                    '--color': '#8e8e93', 
+                    '--color-selected': '#ff5a5e',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    background: 'transparent',
+                  }}>
+                    <img src={mineIcon} alt="我的" style={{ width: '60%', height: '60%',marginLeft: '4px',marginRight: '4px' }} />
+                    <IonLabel style={{ fontSize: '14px', fontWeight: 500 }}>我的</IonLabel>
                   </IonTabButton>
                 </IonTabBar>
               </IonTabs>

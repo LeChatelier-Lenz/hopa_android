@@ -1,0 +1,211 @@
+/* 全局样式 - 统一的渐变和色彩效果 */
+
+/* 背景渐变 */
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%);
+}
+
+.gradient-bg-secondary {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+}
+
+.gradient-bg-success {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.gradient-bg-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.gradient-bg-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+}
+
+.gradient-bg-light {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.gradient-bg-warm {
+  background: linear-gradient(135deg, #fefefe 0%, #f9fafb 100%);
+}
+
+/* 卡片渐变 */
+.gradient-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  border: 1px solid rgba(255, 90, 94, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* 按钮渐变 */
+.gradient-button-primary {
+  background: linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%);
+  box-shadow: 0 4px 15px rgba(255, 90, 94, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-button-primary:hover {
+  background: linear-gradient(135deg, #ff4a4e 0%, #ff6a6e 100%);
+  box-shadow: 0 6px 20px rgba(255, 90, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.gradient-button-secondary {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-button-secondary:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+/* 标签渐变 */
+.gradient-chip {
+  background: linear-gradient(135deg, rgba(255, 90, 94, 0.1) 0%, rgba(255, 122, 126, 0.1) 100%);
+  border: 1px solid rgba(255, 90, 94, 0.2);
+  color: #ff5a5e;
+  transition: all 0.3s ease;
+}
+
+.gradient-chip:hover {
+  background: linear-gradient(135deg, rgba(255, 90, 94, 0.15) 0%, rgba(255, 122, 126, 0.15) 100%);
+  transform: scale(1.05);
+}
+
+/* 状态指示器 */
+.status-online {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.status-offline {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+}
+
+.status-busy {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+/* 进度条渐变 */
+.gradient-progress {
+  background: linear-gradient(90deg, #ff5a5e 0%, #ff7a7e 50%, #ff5a5e 100%);
+  background-size: 200% 100%;
+  animation: progressShimmer 2s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 边框渐变 */
+.gradient-border {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(135deg, #ff5a5e 0%, #6366f1 100%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+}
+
+/* 阴影效果 */
+.shadow-soft {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-medium {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-strong {
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+/* 动画效果 */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .gradient-card {
+    margin: 8px;
+  }
+  
+  .gradient-button-primary,
+  .gradient-button-secondary {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .gradient-bg-warm {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  }
+  
+  .gradient-card {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    border-color: rgba(255, 90, 94, 0.2);
+  }
+}

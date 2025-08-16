@@ -123,12 +123,31 @@ const Mine: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#ff5a5e', '--color': '#ffffff' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2 }}>
-            <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 600 }}>
+        <IonToolbar style={{ 
+          '--background': 'linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%)', 
+          '--color': '#ffffff',
+          '--min-height': '80px',
+          '--padding-top': '16px',
+          '--padding-bottom': '16px',
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            px: 2,
+            height: '100%',
+          }}>
+            <Box sx={{ flex: 1 }} />
+            <Typography variant="h3" sx={{ 
+              color: '#ffffff', 
+              fontWeight: 700,
+              textAlign: 'center',
+              flex: 1,
+              fontSize: { xs: '1.5rem', sm: '1.75rem' },
+            }}>
               个人主页
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, flex: 1, justifyContent: 'flex-end' }}>
               <IconButton sx={{ color: '#ffffff' }} onClick={handleQrCodeClick}>
                 <QrCodeIcon />
               </IconButton>

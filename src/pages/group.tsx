@@ -181,9 +181,28 @@ const Group: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#ff5a5e', '--color': '#ffffff' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2 }}>
-            <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 600 }}>
+        <IonToolbar style={{ 
+          '--background': 'linear-gradient(135deg, #ff5a5e 0%, #ff7a7e 100%)', 
+          '--color': '#ffffff',
+          '--min-height': '80px',
+          '--padding-top': '16px',
+          '--padding-bottom': '16px',
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            px: 2,
+            height: '100%',
+          }}>
+            <Box sx={{ flex: 1 }} />
+            <Typography variant="h3" sx={{ 
+              color: '#ffffff', 
+              fontWeight: 700,
+              textAlign: 'center',
+              flex: 1,
+              fontSize: { xs: '1.5rem', sm: '1.75rem' },
+            }}>
               共识圈子
             </Typography>
             <Button
@@ -192,6 +211,8 @@ const Group: React.FC = () => {
               sx={{
                 bgcolor: 'rgba(255,255,255,0.2)',
                 color: '#ffffff',
+                flex: 1,
+                justifyContent: 'flex-end',
                 '&:hover': {
                   bgcolor: 'rgba(255,255,255,0.3)',
                 },
@@ -208,6 +229,7 @@ const Group: React.FC = () => {
           {/* 切换栏 */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs 
+              centered
               value={tabValue} 
               onChange={handleTabChange}
               sx={{

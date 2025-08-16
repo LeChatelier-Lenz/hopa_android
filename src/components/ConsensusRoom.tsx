@@ -651,11 +651,8 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
               startIcon={<PlayArrow />}
               onClick={onStartGame}
               disabled={readyCount < 2} // 至少需要2个人准备好
+              className="gradient-button-primary"
               sx={{
-                background: 'linear-gradient(45deg, #ff5a5e, #ff7a7e)',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #ff4a4e, #ff6a6e)',
-                },
                 '&:disabled': {
                   background: '#ccc',
                 },
@@ -663,6 +660,9 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
                 py: { xs: 1, sm: 1.5 },
                 fontSize: { xs: '0.9rem', sm: '1.1rem' },
                 fontWeight: 600,
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                },
               }}
             >
               开始游戏 ({readyCount}/{onlineCount})
