@@ -20,17 +20,11 @@ interface DoubaoResponse {
 }
 
 export class DoubaoAPI {
-  private apiKey: string;
-  private apiUrl: string;
+  private backendUrl: string;
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_DOUBAO_API_KEY;
-    // 使用Vite代理路径
-    this.apiUrl = '/api/doubao';
-    
-    if (!this.apiKey) {
-      throw new Error('VITE_DOUBAO_API_KEY environment variable is not set');
-    }
+    // 调用后端API，不再需要API密钥
+    this.backendUrl = 'http://localhost:3001/ai';
   }
 
   async generateImage(prompt: string, options?: {
@@ -39,25 +33,22 @@ export class DoubaoAPI {
     watermark?: boolean;
     response_format?: 'url' | 'b64_json';
   }): Promise<string> {
-    const requestBody: DoubaoRequest = {
-      model: 'doubao-seedream-3-0-t2i-250415',
+    const requestBody = {
       prompt,
-      response_format: options?.response_format || 'url',
       size: options?.size || '1080x1920',
       guidance_scale: options?.guidance_scale || 3,
       watermark: options?.watermark || true,
-      n: 1,
+      response_format: options?.response_format || 'url',
     };
 
     try {
       const startTime = Date.now();
-      console.log('🎨 发送Doubao文生图请求:', requestBody);
+      console.log('🎨 发送Doubao后端API请求:', requestBody);
 
-      const response = await fetch(this.apiUrl, {
+      const response = await fetch(`${this.backendUrl}/doubao/generate-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -67,24 +58,19 @@ export class DoubaoAPI {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Doubao API error: ${response.status} ${response.statusText}\n${errorText}`);
+        throw new Error(`后端API错误: ${response.status} ${response.statusText}\n${errorText}`);
       }
 
-      const data: DoubaoResponse = await response.json();
-      console.log(`✅ Doubao API响应成功 (用时: ${duration}ms):`, data);
+      const data = await response.json();
+      console.log(`✅ 后端API响应成功 (用时: ${duration}ms):`, data);
 
-      if (!data.data || data.data.length === 0) {
-        throw new Error('Doubao API返回空响应');
+      if (!data.success || !data.imageUrl) {
+        throw new Error(data.message || '后端API返回错误');
       }
 
-      const imageUrl = data.data[0].url;
-      if (!imageUrl) {
-        throw new Error('Doubao API未返回图片URL');
-      }
-
-      return imageUrl;
+      return data.imageUrl;
     } catch (error) {
-      console.error('❌ Doubao API请求失败:', error);
+      console.error('❌ 后端API请求失败:', error);
       throw error;
     }
   }
@@ -122,22 +108,44 @@ export class DoubaoAPI {
     description: string;
     theme?: string;
   }): Promise<string> {
-    // 使用prompt管理系统
-    const { BackgroundPrompts } = await import('../prompts');
-    
-    // 智能匹配场景参数
-    const promptParams = BackgroundPrompts.smartMatch(scenario);
-    
-    // 生成优化的prompt
-    const prompt = BackgroundPrompts.generateBackground(promptParams);
-    
-    console.log('🎨 生成背景图 prompt:', prompt);
-    
-    return await this.generateImage(prompt, {
-      size: '1080x1920', // 竖屏比例
-      guidance_scale: 4,
-      watermark: false, // 游戏背景不需要水印
-    });
+    const requestBody = {
+      title: scenario.title,
+      description: scenario.description,
+      theme: scenario.theme,
+    };
+
+    try {
+      const startTime = Date.now();
+      console.log('🎨 发送背景图生成请求:', requestBody);
+
+      const response = await fetch(`${this.backendUrl}/doubao/generate-background`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`后端API错误: ${response.status} ${response.statusText}\n${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ 背景图生成成功 (用时: ${duration}ms):`, data);
+
+      if (!data.success || !data.imageUrl) {
+        throw new Error(data.message || '背景图生成失败');
+      }
+
+      return data.imageUrl;
+    } catch (error) {
+      console.error('❌ 背景图生成失败:', error);
+      throw error;
+    }
   }
 }
 

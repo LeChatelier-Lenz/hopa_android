@@ -28,25 +28,18 @@ interface KimiResponse {
 }
 
 export class KimiAPI {
-  private apiKey: string;
-  private apiUrl: string;
+  private backendUrl: string;
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_KIMI_API_KEY;
-    // 使用Vite代理路径
-    this.apiUrl = '/api/kimi';
-    
-    if (!this.apiKey) {
-      throw new Error('VITE_KIMI_API_KEY environment variable is not set');
-    }
+    // 调用后端API，不再需要API密钥
+    this.backendUrl = 'http://localhost:3001/ai';
   }
 
   async chat(messages: KimiMessage[], options?: {
     temperature?: number;
     max_tokens?: number;
   }): Promise<string> {
-    const requestBody: KimiRequest = {
-      model: 'kimi-k2-250711',
+    const requestBody = {
       messages,
       temperature: options?.temperature || 0.7,
       max_tokens: options?.max_tokens || 1000,
@@ -54,13 +47,12 @@ export class KimiAPI {
 
     try {
       const startTime = Date.now();
-      console.log('🚀 发送Kimi API请求:', requestBody);
+      console.log('🚀 发送Kimi后端API请求:', requestBody);
 
-      const response = await fetch(this.apiUrl, {
+      const response = await fetch(`${this.backendUrl}/kimi/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -70,19 +62,19 @@ export class KimiAPI {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Kimi API error: ${response.status} ${response.statusText}\n${errorText}`);
+        throw new Error(`后端API错误: ${response.status} ${response.statusText}\n${errorText}`);
       }
 
-      const data: KimiResponse = await response.json();
-      console.log(`✅ Kimi API响应成功 (用时: ${duration}ms):`, data);
+      const data = await response.json();
+      console.log(`✅ 后端API响应成功 (用时: ${duration}ms):`, data);
 
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('Kimi API返回空响应');
+      if (!data.success || !data.response) {
+        throw new Error(data.message || '后端API返回错误');
       }
 
-      return data.choices[0].message.content;
+      return data.response;
     } catch (error) {
-      console.error('❌ Kimi API请求失败:', error);
+      console.error('❌ 后端API请求失败:', error);
       throw error;
     }
   }
@@ -113,7 +105,139 @@ export class KimiAPI {
     }
   }
 
-  // 生成共识相关的问题
+  // 生成冲突预测和解决题目
+  async generateConflictQuestions(scenario: {
+    title: string;
+    description: string;
+    scenarioType?: string;
+    budget?: [number, number];
+    duration?: string;
+    preferences?: string[];
+  }): Promise<Array<{
+    id: string;
+    type: 'choice' | 'fill' | 'sort';
+    question: string;
+    options?: string[];
+    correctAnswer?: number | string | string[];
+    explanation: string;
+    category: string;
+  }>> {
+    const requestBody = {
+      title: scenario.title,
+      description: scenario.description,
+      scenarioType: scenario.scenarioType,
+      budget: scenario.budget,
+      duration: scenario.duration,
+      preferences: scenario.preferences,
+      requestType: 'conflict_prediction', // 新的请求类型
+    };
+
+    try {
+      const startTime = Date.now();
+      console.log('🚀 发送冲突预测题目生成请求:', requestBody);
+
+      const response = await fetch(`${this.backendUrl}/kimi/generate-conflict-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`后端API错误: ${response.status} ${response.statusText}\n${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ 冲突题目生成成功 (用时: ${duration}ms):`, data);
+
+      if (!data.success || !data.questions) {
+        throw new Error(data.message || '冲突题目生成失败');
+      }
+
+      return data.questions;
+    } catch (error) {
+      console.error('❌ 冲突题目生成失败:', error);
+      // 返回默认题目
+      return this.getDefaultConflictQuestions();
+    }
+  }
+
+  private getDefaultConflictQuestions() {
+    return [
+      {
+        id: 'conflict_1',
+        type: 'choice' as const,
+        question: '在预算分歧时，你们通常如何协调？',
+        options: [
+          '优先考虑性价比最高的选项',
+          '平均分配预算到各个环节',
+          '重点投入到最重要的体验',
+          '寻找免费或低成本替代方案'
+        ],
+        correctAnswer: 2,
+        explanation: '重点投入能创造最佳共同体验',
+        category: 'budget'
+      },
+      {
+        id: 'conflict_2',
+        type: 'choice' as const,
+        question: '时间安排产生冲突时，最好的解决方案是？',
+        options: [
+          '严格按照计划执行',
+          '灵活调整，优先重要活动',
+          '民主投票决定',
+          '轮流决定优先级'
+        ],
+        correctAnswer: 1,
+        explanation: '灵活性有助于应对突发情况',
+        category: 'time'
+      },
+      {
+        id: 'conflict_3',
+        type: 'sort' as const,
+        question: '请按重要性排序这些冲突解决原则：',
+        options: [
+          '开放沟通',
+          '互相妥协',
+          '尊重差异',
+          '寻找共赢'
+        ],
+        correctAnswer: ['开放沟通', '尊重差异', '寻找共赢', '互相妥协'],
+        explanation: '沟通是基础，尊重是前提，共赢是目标',
+        category: 'principle'
+      },
+      {
+        id: 'conflict_4',
+        type: 'fill' as const,
+        question: '当遇到意见分歧时，最重要的是保持_____，通过_____来解决问题。',
+        options: ['耐心', '理解', '沟通', '冷静'],
+        correctAnswer: ['冷静', '沟通'],
+        explanation: '冷静思考和开放沟通是解决冲突的关键',
+        category: 'communication'
+      },
+      {
+        id: 'conflict_5',
+        type: 'choice' as const,
+        question: '团队决策时最容易产生冲突的环节是？',
+        options: [
+          '目标设定阶段',
+          '资源分配阶段',
+          '执行方案确定',
+          '结果评估阶段'
+        ],
+        correctAnswer: 1,
+        explanation: '资源有限时最容易产生分歧',
+        category: 'decision'
+      }
+    ];
+  }
+
+  // 保持原有的生成共识问题方法
   async generateConsensusQuestions(scenario: {
     title: string;
     description: string;
@@ -127,44 +251,45 @@ export class KimiAPI {
     correctAnswer: number;
     explanation: string;
   }> {
-    const scenarioTypeText = scenario.scenarioType === 'friends' ? '朋友聚会' :
-                            scenario.scenarioType === 'family' ? '家庭活动' :
-                            scenario.scenarioType === 'team' ? '团队协作' :
-                            scenario.scenarioType === 'couples' ? '情侣约会' : '共识活动';
-    
-    const prompt = `
-基于以下${scenarioTypeText}场景，生成一个关于决策的共识问题：
-- 活动主题：${scenario.title}
-- 活动描述：${scenario.description}
-${scenario.budget ? `- 预算范围：${scenario.budget[0]}-${scenario.budget[1]}元` : ''}
-${scenario.duration ? `- 活动时长：${scenario.duration}` : ''}
-${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` : ''}
-
-请生成一个具体的决策问题，包含4个选项，并指出最合理的选择。
-返回JSON格式：
-{
-  "question": "问题描述",
-  "options": ["选项A", "选项B", "选项C", "选项D"],
-  "correctAnswer": 0,
-  "explanation": "为什么这是最佳选择的解释"
-}
-`;
+    const requestBody = {
+      title: scenario.title,
+      description: scenario.description,
+      scenarioType: scenario.scenarioType,
+      budget: scenario.budget,
+      duration: scenario.duration,
+      preferences: scenario.preferences,
+    };
 
     try {
-      const response = await this.chat([
-        { role: 'system', content: `你是${scenarioTypeText}规划专家，擅长为不同群体设计合适的活动方案。` },
-        { role: 'user', content: prompt }
-      ]);
+      const startTime = Date.now();
+      console.log('🚀 发送问题生成请求:', requestBody);
 
-      // 尝试解析JSON响应
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('AI响应格式不正确');
+      const response = await fetch(`${this.backendUrl}/kimi/generate-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`后端API错误: ${response.status} ${response.statusText}\n${errorText}`);
       }
+
+      const data = await response.json();
+      console.log(`✅ 问题生成成功 (用时: ${duration}ms):`, data);
+
+      if (!data.success || !data.questions) {
+        throw new Error(data.message || '问题生成失败');
+      }
+
+      return data.questions;
     } catch (error) {
-      console.error('生成问题失败:', error);
+      console.error('❌ 问题生成失败:', error);
       // 返回默认问题
       return {
         question: '在预算和时间有限的情况下，你们会如何安排这次活动？',

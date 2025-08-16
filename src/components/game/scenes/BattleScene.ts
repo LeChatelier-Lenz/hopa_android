@@ -52,17 +52,41 @@ export class BattleScene extends Phaser.Scene {
   }
 
   preload() {
-    // 由于我们使用placeholder图片，这里创建简单的几何形状作为占位符
-    this.load.image('background', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    // 创建简单的角色和怪物占位符
+    this.createPlaceholderAssets();
     
     // 加载AI生成的背景图（如果有）
     if (this.gameData?.backgroundUrl) {
       console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
-      this.load.image('ai_background', this.gameData.backgroundUrl);
+      try {
+        this.load.image('ai_background', this.gameData.backgroundUrl);
+        
+        // 添加加载完成监听
+        this.load.on('filecomplete-image-ai_background', () => {
+          console.log('✅ AI背景图加载完成');
+        });
+        
+        // 添加加载错误监听  
+        this.load.on('loaderror', (file: any) => {
+          if (file.key === 'ai_background') {
+            console.error('❌ AI背景图加载失败:', file.src);
+          }
+        });
+      } catch (error) {
+        console.error('❌ AI背景图URL无效:', error);
+      }
     }
     
-    // 创建简单的角色和怪物占位符
-    this.createPlaceholderAssets();
+    // 随机加载一个怪兽图片
+    const monsterIndex = Math.floor(Math.random() * 5) + 1;
+    const monsterExtension = monsterIndex === 1 ? 'png' : 'jpg';
+    this.load.image('monster_sprite', `/src/assets/game/monsters/monster${monsterIndex}.${monsterExtension}`);
+    
+    // 加载角色图片
+    this.load.image('character1', '/src/assets/game/characters/cha1.jpg');
+    this.load.image('character2', '/src/assets/game/characters/cha2.jpg');
+    this.load.image('character3', '/src/assets/game/characters/cha3.jpg');
+    this.load.image('character4', '/src/assets/game/characters/cha4.jpg');
   }
 
   create() {
@@ -81,23 +105,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createPlaceholderAssets() {
-    // 创建角色占位符 (蓝色圆形)
-    this.add.graphics()
-      .fillStyle(0x4CAF50)
-      .fillCircle(25, 25, 25)
-      .generateTexture('character', 50, 50);
-
-    // 创建怪物占位符 (红色方形)
-    this.add.graphics()
-      .fillStyle(0xFF5722)
-      .fillRect(0, 0, 80, 80)
-      .generateTexture('monster', 80, 80);
-
     // 创建西湖背景占位符 (渐变蓝色)
     const graphics = this.add.graphics();
     graphics.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xB0E0E6, 0xB0E0E6, 1);
-    graphics.fillRect(0, 0, 375, 667);
-    graphics.generateTexture('westlake_bg', 375, 667);
+    graphics.fillRect(0, 0, this.scale.width, this.scale.height);
+    graphics.generateTexture('westlake_bg', this.scale.width, this.scale.height);
     graphics.destroy();
   }
 
@@ -105,126 +117,132 @@ export class BattleScene extends Phaser.Scene {
     // 优先使用AI生成的背景图
     if (this.gameData?.backgroundUrl && this.textures.exists('ai_background')) {
       console.log('✅ 使用AI生成的背景图');
-      const bg = this.add.image(187.5, 333.5, 'ai_background');
-      bg.setDisplaySize(375, 667);
+      const bg = this.add.image(0, 0, 'ai_background');
+      bg.setOrigin(0, 0);
+      bg.setDisplaySize(this.scale.width, this.scale.height);
       
       // 添加半透明遮罩以提高UI可读性
       const overlay = this.add.graphics();
-      overlay.fillStyle(0x000000, 0.2);
-      overlay.fillRect(0, 0, 375, 667);
+      overlay.fillStyle(0x000000, 0.3);
+      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
     } else {
       console.log('📋 使用默认西湖背景');
       // 添加默认西湖风景背景
-      const bg = this.add.image(187.5, 333.5, 'westlake_bg');
-      bg.setDisplaySize(375, 667);
+      const bg = this.add.image(0, 0, 'westlake_bg');
+      bg.setOrigin(0, 0);
+      bg.setDisplaySize(this.scale.width, this.scale.height);
     }
 
-    // 添加西湖标志性建筑轮廓（保持原有装饰元素）
-    const graphics = this.add.graphics();
-    
-    // 雷峰塔轮廓 (左侧)
-    graphics.lineStyle(3, 0x8B4513);
-    graphics.beginPath();
-    graphics.moveTo(50, 300);
-    graphics.lineTo(70, 150);
-    graphics.lineTo(90, 150);
-    graphics.lineTo(110, 300);
-    graphics.closePath();
-    graphics.strokePath();
-    
-    // 断桥轮廓 (右侧)
-    graphics.lineStyle(3, 0x696969);
-    graphics.beginPath();
-    graphics.moveTo(265, 320);
-    graphics.arc(300, 320, 35, Math.PI, 0, false);
-    graphics.lineTo(335, 320);
-    graphics.strokePath();
-
-    // 添加文字标识
-    this.add.text(187.5, 80, '🏞️ 共识征程大作战', {
-      fontSize: '24px',
-      color: '#ff5a5e',
+    // 添加游戏标题
+    this.add.text(this.scale.width / 2, this.scale.height * 0.08, '🏞️ 共识征程大作战', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.04}px`,
+      color: '#ffffff',
       fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4,
     }).setOrigin(0.5);
   }
 
   private setupCharacters() {
     if (!this.gameData) return;
 
-    // 创建两个角色，站在战斗场景下方
-    const char1 = new Character(this, 150, 500, this.gameData.player1Config);
-    const char2 = new Character(this, 225, 500, this.gameData.player2Config);
+    // 角色位置在屏幕底部
+    const char1X = this.scale.width * 0.35;
+    const char2X = this.scale.width * 0.65;
+    const charY = this.scale.height * 0.85;
+    const charSize = Math.min(this.scale.width, this.scale.height) * 0.08;
+
+    // 创建两个角色
+    const char1Sprite = this.add.image(char1X, charY, 'character1');
+    char1Sprite.setDisplaySize(charSize, charSize);
+    
+    const char2Sprite = this.add.image(char2X, charY, 'character2');
+    char2Sprite.setDisplaySize(charSize, charSize);
+    
+    // 使用真实角色而不是Character类
+    const char1 = new Character(this, char1X, charY, this.gameData.player1Config);
+    const char2 = new Character(this, char2X, charY, this.gameData.player2Config);
+    
+    // 隐藏原来的sprite，使用我们的图片
+    char1.getSprite().setVisible(false);
+    char2.getSprite().setVisible(false);
     
     this.characters.push(char1, char2);
     
     // 添加角色名称
-    this.add.text(150, 470, char1.getName(), {
-      fontSize: '14px',
-      color: '#333',
-      backgroundColor: '#fff',
-      padding: { x: 6, y: 3 },
+    this.add.text(char1X, charY + charSize/2 + 15, '玩家1', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
     }).setOrigin(0.5);
     
-    this.add.text(225, 470, char2.getName(), {
-      fontSize: '14px',
-      color: '#333',
-      backgroundColor: '#fff',
-      padding: { x: 6, y: 3 },
+    this.add.text(char2X, charY + charSize/2 + 15, '玩家2', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
     }).setOrigin(0.5);
   }
 
   private setupMonsters() {
-    if (!this.gameData || !this.gameData.monsters.length) {
-      // 创建默认怪物用于演示
-      this.createDefaultMonsters();
-      return;
-    }
-
-    // 根据游戏数据创建怪物
-    this.gameData.monsters.forEach((monsterData, index) => {
-      const x = 187.5;
-      const y = 250;
-      const monster = new Monster(this, x, y, monsterData);
-      this.monsters.push(monster);
-      
-      // 创建怪物血条
-      this.createHealthBar(monster.getId(), x, y - 60);
-    });
-  }
-
-  private createDefaultMonsters() {
-    // 创建预算狮王
-    const budgetLion = new Monster(this, 187.5, 250, {
-      id: 'budget_lion',
-      name: '预算狮王',
-      type: 'budget',
-      health: 100,
-      maxHealth: 100,
-      attacks: ['金币雨', '预算压制'],
-    });
+    // 创建怪物 - 位置在屏幕中上部
+    const monsterX = this.scale.width / 2;
+    const monsterY = this.scale.height * 0.3;
+    const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.25;
     
-    this.monsters.push(budgetLion);
-    this.createHealthBar('budget_lion', 187.5, 190);
+    // 使用真实怪物图片
+    const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
+    monsterSprite.setDisplaySize(monsterSize, monsterSize);
+    
+    // 创建怪物对象（用于逻辑）
+    const monsterData = {
+      id: 'consensus_monster',
+      name: '共识守护兽',
+      type: 'consensus',
+      health: 500,
+      maxHealth: 500,
+      attacks: ['冲突制造', '分歧强化'],
+    };
+    
+    const monster = new Monster(this, monsterX, monsterY, monsterData);
+    // 隐藏Monster类的默认sprite，使用我们的图片
+    monster.getSprite().setVisible(false);
+    
+    this.monsters.push(monster);
+    
+    // 创建怪物血条
+    this.createHealthBar('consensus_monster', monsterX, monsterY - monsterSize/2 - 30);
     
     // 添加怪物名称
-    this.add.text(187.5, 160, '🦁 预算狮王', {
-      fontSize: '16px',
-      color: '#ff5a5e',
+    this.add.text(monsterX, monsterY - monsterSize/2 - 60, '🦁 共识守护兽', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.03}px`,
+      color: '#ffffff',
       fontStyle: 'bold',
+      stroke: '#ff5a5e',
+      strokeThickness: 3,
     }).setOrigin(0.5);
   }
 
+
   private createHealthBar(monsterId: string, x: number, y: number) {
+    const barWidth = this.scale.width * 0.4;
+    const barHeight = this.scale.height * 0.015;
+    
     const healthBar = this.add.graphics();
-    healthBar.setPosition(x - 40, y);
+    healthBar.setPosition(x - barWidth/2, y);
     
     // 背景条
-    healthBar.fillStyle(0x333333);
-    healthBar.fillRect(0, 0, 80, 8);
+    healthBar.fillStyle(0x333333, 0.8);
+    healthBar.fillRoundedRect(0, 0, barWidth, barHeight, barHeight/2);
     
     // 血量条
     healthBar.fillStyle(0xff0000);
-    healthBar.fillRect(0, 0, 80, 8);
+    healthBar.fillRoundedRect(0, 0, barWidth, barHeight, barHeight/2);
+    
+    // 边框
+    healthBar.lineStyle(2, 0xffffff, 0.8);
+    healthBar.strokeRoundedRect(0, 0, barWidth, barHeight, barHeight/2);
     
     this.healthBars[monsterId] = healthBar;
   }
@@ -233,42 +251,59 @@ export class BattleScene extends Phaser.Scene {
     const healthBar = this.healthBars[monsterId];
     if (!healthBar) return;
     
+    const barWidth = this.scale.width * 0.4;
+    const barHeight = this.scale.height * 0.015;
+    
     healthBar.clear();
     
     // 背景条
-    healthBar.fillStyle(0x333333);
-    healthBar.fillRect(0, 0, 80, 8);
+    healthBar.fillStyle(0x333333, 0.8);
+    healthBar.fillRoundedRect(0, 0, barWidth, barHeight, barHeight/2);
     
     // 血量条
     const healthPercent = currentHealth / maxHealth;
     const color = healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.2 ? 0xffff00 : 0xff0000;
     healthBar.fillStyle(color);
-    healthBar.fillRect(0, 0, 80 * healthPercent, 8);
+    healthBar.fillRoundedRect(0, 0, barWidth * healthPercent, barHeight, barHeight/2);
+    
+    // 边框
+    healthBar.lineStyle(2, 0xffffff, 0.8);
+    healthBar.strokeRoundedRect(0, 0, barWidth, barHeight, barHeight/2);
   }
 
   private createUI() {
-    // 创建问题显示区域 - 竖屏布局
-    this.questionText = this.add.text(187.5, 370, '', {
-      fontSize: '16px',
-      color: '#333',
-      backgroundColor: '#fff',
+    // 创建问题显示区域 - 位于怪物和角色之间
+    const questionY = this.scale.height * 0.55;
+    this.questionText = this.add.text(this.scale.width / 2, questionY, '', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#ffffff',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
       padding: { x: 15, y: 8 },
-      wordWrap: { width: 320 },
+      wordWrap: { width: this.scale.width * 0.9 },
+      stroke: '#000000',
+      strokeThickness: 1,
     }).setOrigin(0.5);
 
-    // 创建答案选项按钮 - 垂直排列
+    // 创建答案选项按钮 - 垂直排列，位于角色上方
+    const buttonStartY = this.scale.height * 0.62;
+    const buttonSpacing = this.scale.height * 0.05;
+    const buttonWidth = this.scale.width * 0.85;
+    const buttonHeight = this.scale.height * 0.04;
+    
     for (let i = 0; i < 4; i++) {
-      const x = 187.5;
-      const y = 420 + (i * 50);
+      const x = this.scale.width / 2;
+      const y = buttonStartY + (i * buttonSpacing);
       
-      const button = this.add.rectangle(x, y, 320, 35, 0x4CAF50);
+      const button = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x4CAF50, 0.9);
       button.setInteractive();
       button.setStrokeStyle(2, 0x2E7D32);
       
       const text = this.add.text(x, y, '', {
-        fontSize: '12px',
-        color: '#fff',
-        wordWrap: { width: 300 },
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+        color: '#ffffff',
+        wordWrap: { width: buttonWidth * 0.9 },
+        stroke: '#000000',
+        strokeThickness: 1,
       }).setOrigin(0.5);
       
       // 按钮点击事件

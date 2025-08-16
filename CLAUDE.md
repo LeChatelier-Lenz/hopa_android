@@ -34,27 +34,41 @@ Hopa是一款创新的AI驱动共识达成工具，通过游戏化的方式帮�
 - **Material-UI** - 界面组件库
 - **Vite** - 构建工具
 
+### 后端技术栈
+- **NestJS** + TypeScript
+- **Prisma ORM** + PostgreSQL (Supabase)
+- **JWT认证** + bcrypt加密
+- **Swagger API文档**
+
 ### AI集成
-- **Doubao API**: 文生图模型，用于生成游戏背景
-- **Kimi K2 API**: 大语言模型，用于智能问题生成和决策建议
+- **Doubao API**: 文生图模型，通过后端代理调用
+- **Kimi K2 API**: 大语言模型，支持冲突预测和问题生成
 - **智能Prompt管理**: 针对不同场景优化的提示词系统
 
-### 核心模块
+### 项目结构
 ```
-src/
-├── components/          # React组件
-│   ├── game/           # 游戏相关组件
-│   │   ├── scenes/     # Phaser游戏场景
-│   │   └── entities/   # 游戏实体（角色、怪物）
-│   ├── CharacterCreator.tsx  # 角色创建
-│   └── ConsensusRoom.tsx     # 共识房间
-├── utils/              # 工具函数
-│   ├── kimiApi.ts      # Kimi AI集成
-│   └── doubaoApi.ts    # Doubao AI集成
-├── prompts/            # AI提示词管理
-│   └── backgrounds.ts  # 背景生成提示词
-└── pages/              # 页面组件
-    └── launch.tsx      # 主启动页面
+├── src/                 # 前端源码
+│   ├── components/      # React组件
+│   │   └── game/       # Phaser游戏组件
+│   │       ├── scenes/ # 游戏场景
+│   │       │   ├── LoadingScene.ts   # 加载场景
+│   │       │   ├── BattleScene.ts    # 战斗场景
+│   │       │   └── VictoryScene.ts   # 胜利场景
+│   │       └── entities/             # 游戏实体
+│   ├── assets/game/     # 游戏资源
+│   │   ├── monsters/    # 怪物图片(monster1-5)
+│   │   └── characters/  # 角色图片(cha1-4)
+│   ├── utils/           # 工具函数
+│   │   ├── doubaoApi.ts # AI图片生成
+│   │   └── kimiApi.ts   # AI文本生成
+│   └── prompts/         # AI提示词管理
+└── backend/             # 后端源码
+    ├── src/
+    │   ├── ai/          # AI代理服务
+    │   ├── auth/        # 认证系统
+    │   ├── user/        # 用户管理
+    │   └── prisma/      # 数据库
+    └── prisma/          # 数据库模型
 ```
 
 ## 🎨 AI提示词系统
@@ -83,34 +97,55 @@ src/
 
 ## 🛠 开发指南
 
-### 环境变量配置
+### 环境配置
+
+#### 后端环境变量 (backend/.env)
 ```bash
-# .env文件
-VITE_KIMI_API_KEY=your_kimi_api_key
-VITE_DOUBAO_API_KEY=your_doubao_api_key
+# 数据库配置
+DATABASE_URL=postgresql://postgres:password@host:5432/database
+
+# AI API配置 (后端管理，前端无需配置)
+DOUBAO_API_KEY=your_doubao_api_key
+DOUBAO_API_URL=https://ark.cn-beijing.volces.com/api/v3/images/generations
+KIMI_API_KEY=your_kimi_api_key
+KIMI_API_URL=https://api.moonshot.cn/v1/chat/completions
+
+# JWT认证
+JWT_SECRET=your_jwt_secret
+
+# Supabase配置
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### 开发命令
 ```bash
-# 安装依赖
+# 前端开发
 npm install
-
-# 启动开发服务器
 npm run dev
+
+# 后端开发
+cd backend
+npm install
+npm run start:dev
+
+# 数据库迁移
+cd backend
+npx prisma migrate dev
+npx prisma generate
 
 # 构建生产版本
 npm run build
-
-# 测试AI接口
-npm run kimi     # 测试Kimi API
-npm run doubao   # 测试Doubao API
+cd backend && npm run build
 ```
 
 ### 游戏开发流程
 1. **场景设计**: 在 `src/components/game/scenes/` 中创建新场景
-2. **实体创建**: 在 `src/components/game/entities/` 中定义游戏对象
-3. **AI集成**: 在 `src/prompts/` 中配置相应的提示词
-4. **测试验证**: 使用npm脚本测试AI接口连接
+2. **AI集成**: 通过后端API调用AI服务，无需前端配置API密钥
+3. **资源管理**: 
+   - 怪物图片: `src/assets/game/monsters/monster1-5.(png|jpg)`
+   - 角色图片: `src/assets/game/characters/cha1-4.jpg`
+4. **API开发**: 在 `backend/src/` 中扩展API功能
 
 ## 🎯 产品愿景
 
@@ -118,8 +153,10 @@ npm run doubao   # 测试Doubao API
 - [x] 完成基础游戏框架搭建
 - [x] 集成AI背景生成功能
 - [x] 实现多场景智能识别
-- [ ] 优化角色创建系统
-- [ ] 完善战斗系统平衡性
+- [x] 构建后端API系统
+- [x] 重构游戏加载和战斗界面
+- [ ] 完善冲突预测算法
+- [ ] 优化游戏平衡性
 
 ### 中期目标 (3-6个月)
 - [ ] 添加更多AI功能（怪物生成、装备推荐）

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import { MapScene } from './scenes/MapScene';
+import { LoadingScene } from './scenes/LoadingScene';
 import { BattleScene } from './scenes/BattleScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { Box, Typography } from '@mui/material';
@@ -29,14 +29,18 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
     if (!gameRef.current) return;
 
     try {
-      // Phaser游戏配置 - 竖屏移动端优化
+      // 获取窗口尺寸
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      // Phaser游戏配置 - 全屏移动端优化
       const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
-        width: 375,
-        height: 667,
+        width: windowWidth,
+        height: windowHeight,
         parent: gameRef.current,
         backgroundColor: '#87CEEB', // 天空蓝背景
-        scene: [MapScene, BattleScene, VictoryScene],
+        scene: [LoadingScene, BattleScene, VictoryScene], // 从LoadingScene开始
         physics: {
           default: 'arcade',
           arcade: {
@@ -47,10 +51,8 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: 375,
-          height: 667,
-          min: { width: 300, height: 500 },
-          max: { width: 500, height: 900 },
+          width: windowWidth,
+          height: windowHeight,
         },
         render: {
           antialias: true,
@@ -68,12 +70,9 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         
         // 传递游戏数据到场景
         if (gameData && phaserGameRef.current) {
-          const mapScene = phaserGameRef.current.scene.getScene('MapScene') as MapScene;
-          if (mapScene) {
-            mapScene.setMapData({
-              characters: [gameData.player1Config, gameData.player2Config],
-              monsters: gameData.monsters || []
-            });
+          const loadingScene = phaserGameRef.current.scene.getScene('LoadingScene') as LoadingScene;
+          if (loadingScene) {
+            loadingScene.setGameData(gameData);
           }
 
           const battleScene = phaserGameRef.current.scene.getScene('BattleScene') as BattleScene;
@@ -84,9 +83,9 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
 
         // 设置游戏事件监听
         if (onGameEvent && phaserGameRef.current) {
-          const mapScene = phaserGameRef.current.scene.getScene('MapScene') as MapScene;
-          if (mapScene) {
-            mapScene.setEventCallback(onGameEvent);
+          const loadingScene = phaserGameRef.current.scene.getScene('LoadingScene') as LoadingScene;
+          if (loadingScene) {
+            loadingScene.setEventCallback(onGameEvent);
           }
 
           const battleScene = phaserGameRef.current.scene.getScene('BattleScene') as BattleScene;
@@ -100,9 +99,9 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
           }
         }
 
-        // 启动MapScene作为第一个场景
+        // 启动LoadingScene
         if (phaserGameRef.current) {
-          phaserGameRef.current.scene.start('MapScene');
+          phaserGameRef.current.scene.start('LoadingScene', { gameData });
         }
       });
 
@@ -202,13 +201,12 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
       <div
         ref={gameRef}
         style={{
-          width: '100%',
-          maxWidth: '375px',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
           height: '100vh',
-          maxHeight: '667px',
-          borderRadius: '0',
           overflow: 'hidden',
-          margin: '0 auto',
         }}
       />
     </Box>

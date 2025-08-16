@@ -53,7 +53,7 @@ export class BackgroundPrompts {
     const location = params.location ? locationMap[params.location] : '适合活动的场景';
 
     return `
-创建一个适合${scenarioType}的背景图，垂直构图(9:16比例)，适合手机游戏界面。
+创建一个适合${scenarioType}的背景图，垂直构图(9:16比例)，将被用作游戏背景界面。
 
 共识主题: ${params.title}
 场景描述: ${params.description}

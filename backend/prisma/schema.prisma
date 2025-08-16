@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  nickname  String?
+  avatar    String?
+  birthday  DateTime?
+  gender    Gender?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  characters Character[]
+  ownedRooms Room[]      @relation("RoomOwner")
+  roomMembers RoomMember[]
+  files      File[]
+
+  // 好友关系
+  sentFriendships     Friendship[] @relation("FriendshipSender")
+  receivedFriendships Friendship[] @relation("FriendshipReceiver")
+
+  @@map("users")
+}
+
+// 角色表
+model Character {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  name       String
+  level      Int      @default(1)
+  experience Int      @default(0)
+  avatar     String?
+  config     Json     // 角色配置信息 (外观、装备等)
+  equipment  Json     // 装备信息
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomMembers RoomMember[]
+
+  @@map("characters")
+}
+
+// 房间表
+model Room {
+  id           String      @id @default(cuid())
+  title        String
+  description  String
+  ownerId      String      @map("owner_id")
+  status       RoomStatus  @default(WAITING)
+  inviteCode   String?     @unique @map("invite_code")
+  maxMembers   Int         @default(5) @map("max_members")
+  gameData     Json?       @map("game_data") // 游戏相关数据
+  backgroundUrl String?    @map("background_url") // AI生成的背景图URL
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  // 关联关系
+  owner       User           @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     RoomMember[]
+  consensuses Consensus[]
+  battles     Battle[]
+
+  @@map("rooms")
+}
+
+// 房间成员表
+model RoomMember {
+  id          String   @id @default(cuid())
+  roomId      String   @map("room_id")
+  userId      String   @map("user_id")
+  characterId String?  @map("character_id")
+  role        String   @default("MEMBER") // OWNER, ADMIN, MEMBER
+  isReady     Boolean  @default(false) @map("is_ready")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  // 关联关系
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  @@unique([roomId, userId])
+  @@map("room_members")
+}
+
+// 共识结果表
+model Consensus {
+  id          String   @id @default(cuid())
+  roomId      String   @map("room_id")
+  questions   Json     // 问题和答案数据
+  results     Json     // 共识结果
+  score       Float    // 共识得分
+  isCompleted Boolean  @default(false) @map("is_completed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("consensuses")
+}
+
+// 战斗记录表
+model Battle {
+  id           String   @id @default(cuid())
+  roomId       String   @map("room_id")
+  participants Json     // 参与者信息
+  monsters     Json     // 怪物信息
+  score        Float    // 战斗得分
+  duration     Int      // 战斗时长(秒)
+  isWon        Boolean  @map("is_won")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("battles")
+}
+
+// 好友关系表
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String           @map("sender_id")
+  receiverId String           @map("receiver_id")
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  // 关联关系
+  sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@map("friendships")
+}
+
+// 文件表
+model File {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  filename  String
+  url       String
+  type      FileType
+  size      Int
+  mimeType  String   @map("mime_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("files")
+}
+
+// 枚举类型
+enum RoomStatus {
+  WAITING
+  PLAYING
+  COMPLETED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+enum FileType {
+  AVATAR
+  ROOM_ATTACHMENT
+  AI_BACKGROUND
+  OTHER
+}
