@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Monster } from '../entities/Monster';
+import type { MonsterConfig } from '../entities/Monster';
 import { Character } from '../entities/Character';
 
 interface GameData {
@@ -196,10 +197,10 @@ export class BattleScene extends Phaser.Scene {
     monsterSprite.setDisplaySize(monsterSize, monsterSize);
     
     // 创建怪物对象（用于逻辑）
-    const monsterData = {
+    const monsterData: MonsterConfig = {
       id: 'consensus_monster',
       name: '共识守护兽',
-      type: 'consensus',
+      type: 'budget',
       health: 500,
       maxHealth: 500,
       attacks: ['冲突制造', '分歧强化'],

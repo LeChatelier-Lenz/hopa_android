@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-interface MonsterConfig {
+export interface MonsterConfig {
   id: string;
   name: string;
   type: 'budget' | 'time' | 'attraction' | 'cuisine';
