@@ -104,14 +104,11 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
       status: 'online',
       isHost: false,
     },
-    {
-      id: 'user3',
-      name: '王五',
-      avatar: '/api/placeholder/40/40',
-      status: 'invited',
-      isHost: false,
-    },
   ]);
+  
+  const [pendingInvitations, setPendingInvitations] = useState<{[key: string]: string}>(
+    {'user3': '王五'}
+  );
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -138,6 +135,8 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
   const isHost = currentUser?.isHost || false;
   const readyCount = members.filter(m => m.status === 'ready').length;
   const onlineCount = members.filter(m => m.status === 'online' || m.status === 'ready').length;
+  // 只有所有在线成员都准备好才能开始游戏
+  const canStartGame = onlineCount > 0 && readyCount === onlineCount;
 
   // 自动滚动到聊天底部
   useEffect(() => {
@@ -148,41 +147,97 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
 
   // 模拟用户状态变化
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMembers(prev => prev.map(member => {
-        if (member.status === 'invited' && Math.random() > 0.7) {
-          // 随机接受邀请
+    // 模拟王五加入流程
+    const wangwuTimer = setTimeout(() => {
+      // 先显示邀请消息
+      setChatMessages(prev => [...prev, {
+        id: Date.now().toString() + '_invite',
+        senderId: 'system',
+        senderName: '系统',
+        content: '张三（房主）已邀请王五...',
+        timestamp: new Date(),
+        type: 'system',
+      }]);
+      
+      // 2秒后显示加入消息并更新状态
+      setTimeout(() => {
+        setPendingInvitations(prev => {
+          const newPending = { ...prev };
+          delete newPending['user3'];
+          return newPending;
+        });
+        
+        setMembers(prev => [...prev, {
+          id: 'user3',
+          name: '王五',
+          avatar: '/api/placeholder/40/40',
+          status: 'online',
+          isHost: false,
+        }]);
+        
+        setChatMessages(prev => [...prev, {
+          id: Date.now().toString() + '_join',
+          senderId: 'system',
+          senderName: '系统',
+          content: '王五已加入房间',
+          timestamp: new Date(),
+          type: 'system',
+        }]);
+        
+        // 再等3秒后变为准备状态
+        setTimeout(() => {
+          setMembers(prev => prev.map(member => 
+            member.id === 'user3' 
+              ? { ...member, status: 'ready' as const }
+              : member
+          ));
+          
           setChatMessages(prev => [...prev, {
-            id: Date.now().toString(),
+            id: Date.now().toString() + '_ready',
             senderId: 'system',
             senderName: '系统',
-            content: `${member.name} 加入了房间`,
+            content: '王五已准备就绪',
             timestamp: new Date(),
             type: 'system',
           }]);
-          return { ...member, status: 'online' as const };
-        }
-        return member;
-      }));
+        }, 3000);
+        
+        // 让李四也在6秒后准备好
+        setTimeout(() => {
+          setMembers(prev => prev.map(member => 
+            member.id === 'user2' 
+              ? { ...member, status: 'ready' as const }
+              : member
+          ));
+          
+          setChatMessages(prev => [...prev, {
+            id: Date.now().toString() + '_lisiready',
+            senderId: 'system',
+            senderName: '系统',
+            content: '李四已准备就绪',
+            timestamp: new Date(),
+            type: 'system',
+          }]);
+        }, 6000);
+      }, 2000);
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => clearTimeout(wangwuTimer);
   }, []);
 
   // 聊天区域大小调整功能
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
+      e.preventDefault();
       
-      const container = resizeRef.current?.parentElement;
+      const container = document.querySelector('body');
       if (!container) return;
       
-      const containerRect = container.getBoundingClientRect();
-      const newHeight = containerRect.bottom - e.clientY;
-      const minHeight = 150;
-      const maxHeight = containerRect.height * 0.6;
+      const viewportHeight = window.innerHeight;
+      const newHeight = Math.max(150, Math.min(viewportHeight * 0.6, viewportHeight - e.clientY - 140));
       
-      setChatHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
+      setChatHeight(newHeight);
     };
 
     const handleMouseUp = () => {
@@ -204,7 +259,8 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
     };
   }, [isResizing]);
 
-  const handleResizeStart = () => {
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsResizing(true);
   };
 
@@ -220,8 +276,71 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
 
   // 邀请好友
   const handleInviteFriend = (friendId: string) => {
-    console.log('邀请好友:', friendId);
-    // 这里添加实际邀请逻辑
+    const friend = friends.find(f => f.id === friendId);
+    if (!friend) return;
+    
+    // 添加到等待邀请列表
+    setPendingInvitations(prev => ({
+      ...prev,
+      [`pending_${friendId}`]: friend.name
+    }));
+    
+    // 显示邀请消息
+    setChatMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      senderId: 'system',
+      senderName: '系统',
+      content: `张三（房主）已邀请${friend.name}...`,
+      timestamp: new Date(),
+      type: 'system',
+    }]);
+    
+    // 模拟2-5秒后加入
+    setTimeout(() => {
+      setPendingInvitations(prev => {
+        const newPending = { ...prev };
+        delete newPending[`pending_${friendId}`];
+        return newPending;
+      });
+      
+      setMembers(prev => [...prev, {
+        id: `pending_${friendId}`,
+        name: friend.name,
+        avatar: friend.avatar,
+        status: 'online',
+        isHost: false,
+      }]);
+      
+      setChatMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        senderId: 'system',
+        senderName: '系统',
+        content: `${friend.name}已加入房间`,
+        timestamp: new Date(),
+        type: 'system',
+      }]);
+      
+      // 自动准备（赵六、钱七等邀请的成员应该自动准备）
+      setTimeout(() => {
+        setMembers(prev => prev.map(member => 
+          member.id === `pending_${friendId}` 
+            ? { ...member, status: 'ready' as const }
+            : member
+        ));
+        
+        setChatMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          senderId: 'system',
+          senderName: '系统',
+          content: `${friend.name}已准备就绪`,
+          timestamp: new Date(),
+          type: 'system',
+        }]);
+      }, 1000 + Math.random() * 2000); // 1-3秒后自动准备
+    }, 2000 + Math.random() * 3000);
+    
+    // 关闭邀请对话框
+    setShowInviteDialog(false);
   };
 
   // 分享到社交平台
@@ -381,9 +500,19 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
                 },
                 position: 'relative',
                 background: member.status === 'ready' ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05))' : 'white',
+                minHeight: { xs: 130, sm: 150 },
+                height: 'auto',
               }}
             >
-              <CardContent sx={{ textAlign: 'center', p: { xs: 1.5, sm: 2 } }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                p: { xs: 1.5, sm: 2 },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: { xs: 110, sm: 130 }
+              }}>
                 {member.isHost && (
                   <Chip
                     label="房主"
@@ -495,27 +624,33 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
         ref={resizeRef}
         onMouseDown={handleResizeStart}
         sx={{
-          height: 8,
-          bgcolor: '#f0f0f0',
+          height: 12,
+          bgcolor: '#f8f9fa',
           borderTop: '1px solid #e0e0e0',
           borderBottom: '1px solid #e0e0e0',
           cursor: 'ns-resize',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'background-color 0.2s ease',
+          transition: 'all 0.2s ease',
           '&:hover': {
-            bgcolor: '#e0e0e0',
+            bgcolor: 'rgba(255, 90, 94, 0.08)',
+            borderColor: 'rgba(255, 90, 94, 0.2)',
           },
           position: 'relative',
-          '&::after': {
+          '&::before': {
             content: '""',
-            width: 30,
+            width: 40,
             height: 3,
             bgcolor: '#ccc',
             borderRadius: 2,
             position: 'absolute',
-          }
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+          },
+          '&:hover::before': {
+            bgcolor: '#ff5a5e',
+          },
+          userSelect: 'none',
         }}
       />
 
@@ -650,22 +785,28 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
               size="large"
               startIcon={<PlayArrow />}
               onClick={onStartGame}
-              disabled={readyCount < 2} // 至少需要2个人准备好
-              className="gradient-button-primary"
+              disabled={!canStartGame} // 所有在线成员都必须准备好
               sx={{
+                background: canStartGame 
+                  ? 'linear-gradient(45deg, #ff5a5e, #ff7a7e)' 
+                  : '#ccc',
+                '&:hover': {
+                  background: canStartGame 
+                    ? 'linear-gradient(45deg, #ff4a4e, #ff6a6e)' 
+                    : '#ccc',
+                },
                 '&:disabled': {
                   background: '#ccc',
+                  color: '#666',
                 },
                 px: { xs: 2, sm: 4 },
                 py: { xs: 1, sm: 1.5 },
                 fontSize: { xs: '0.9rem', sm: '1.1rem' },
                 fontWeight: 600,
-                '&:hover': {
-                  transform: 'translateY(-1px)',
-                },
+                transition: 'all 0.3s ease',
               }}
             >
-              开始游戏 ({readyCount}/{onlineCount})
+              {canStartGame ? '🎮 开始游戏' : `等待准备 (${readyCount}/${onlineCount})`}
             </Button>
           )}
         </Box>
@@ -772,7 +913,11 @@ const ConsensusRoom: React.FC<ConsensusRoomProps> = ({
               </Typography>
               
               <List sx={{ flex: 1, overflow: 'auto', p: 0 }}>
-                {friends.map((friend) => (
+                {friends.filter(friend => 
+                  // 排除已加入的成员和正在邀请的成员
+                  !members.some(member => member.name === friend.name) &&
+                  !Object.values(pendingInvitations).includes(friend.name)
+                ).map((friend) => (
                   <ListItem key={friend.id} sx={{ px: 0, py: 1 }}>
                     <ListItemAvatar>
                       <Avatar src={friend.avatar} sx={{ width: 32, height: 32 }} />

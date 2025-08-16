@@ -43,6 +43,8 @@ import {
 } from '@mui/icons-material';
 import { useHistory } from 'react-router-dom';
 import ConsensusRoom from '../components/ConsensusRoom';
+import CharacterCreator from '../components/CharacterCreator';
+import PhaserGame from '../components/game/PhaserGame';
 import backgroundImage from '../assets/images/background.png';
 import './launch.css';
 
@@ -74,6 +76,8 @@ const LaunchPage: React.FC = () => {
   const [showGameButton, setShowGameButton] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [roomId] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
+  const [gamePhase, setGamePhase] = useState<'room' | 'character' | 'battle'>('room');
+  const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
 
   // 模拟好友列表
   const friends: Friend[] = [
@@ -115,9 +119,21 @@ const LaunchPage: React.FC = () => {
 
   // 处理进入游戏
   const handleStartGame = () => {
-    console.log('开始游戏');
-    // 这里可以添加跳转到游戏页面的逻辑
-    history.push('/game');
+    setGamePhase('character');
+  };
+
+  // 处理角色创建完成
+  const handleCharacterCreated = (characterConfig: any) => {
+    setPlayerCharacters(prev => [...prev, characterConfig]);
+    // 如果角色已创建完成，进入战斗阶段
+    if (playerCharacters.length >= 1) { // 简化为1个角色即可开始
+      setGamePhase('battle');
+    }
+  };
+
+  // 处理返回房间
+  const handleBackToRoom = () => {
+    setGamePhase('room');
   };
 
 
@@ -435,16 +451,99 @@ const LaunchPage: React.FC = () => {
          );
 
       case 3:
-        return (
-          <ConsensusRoom
-            roomId={roomId}
-            consensusTitle={consensusGoal.title}
-            maxParticipants={consensusGoal.maxParticipants}
-            currentUserId="user1" // 假设当前用户是user1
-            onStartGame={handleStartGame}
-            onLeaveRoom={handleLeaveRoom}
-          />
-        );
+        if (gamePhase === 'character') {
+          return (
+            <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+              {/* 角色创建阶段的头部 */}
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: '#ff5a5e', color: 'white' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    🎮 角色创建与装备选择
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleBackToRoom}
+                    sx={{ 
+                      color: 'white', 
+                      borderColor: 'white',
+                      '&:hover': { 
+                        bgcolor: 'rgba(255,255,255,0.1)',
+                        borderColor: 'white'
+                      }
+                    }}
+                  >
+                    返回房间
+                  </Button>
+                </Box>
+              </Box>
+              
+              {/* 角色创建组件 */}
+              <Box sx={{ flex: 1, overflow: 'auto' }}>
+                <CharacterCreator
+                  onCharacterCreated={handleCharacterCreated}
+                  onBack={handleBackToRoom}
+                />
+              </Box>
+            </Box>
+          );
+        } else if (gamePhase === 'battle') {
+          return (
+            <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+              {/* 战斗阶段的头部 */}
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: '#ff5a5e', color: 'white' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    ⚔️ 西湖约会大作战
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setGamePhase('character')}
+                    sx={{ 
+                      color: 'white', 
+                      borderColor: 'white',
+                      '&:hover': { 
+                        bgcolor: 'rgba(255,255,255,0.1)',
+                        borderColor: 'white'
+                      }
+                    }}
+                  >
+                    返回角色选择
+                  </Button>
+                </Box>
+              </Box>
+              
+              {/* 游戏组件 */}
+              <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                <PhaserGame
+                  gameData={{
+                    player1Config: playerCharacters[0] || { name: '玩家1', style: 'casual' },
+                    player2Config: playerCharacters[1] || { name: '玩家2', style: 'elegant' },
+                    monsters: []
+                  }}
+                  onGameEvent={(event, data) => {
+                    console.log('游戏事件:', event, data);
+                    if (event === 'victory') {
+                      // 可以处理胜利后的逻辑
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+          );
+        } else {
+          return (
+            <ConsensusRoom
+              roomId={roomId}
+              consensusTitle={consensusGoal.title}
+              maxParticipants={consensusGoal.maxParticipants}
+              currentUserId="user1" // 假设当前用户是user1
+              onStartGame={handleStartGame}
+              onLeaveRoom={handleLeaveRoom}
+            />
+          );
+        }
 
       default:
         return null;
