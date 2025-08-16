@@ -114,9 +114,8 @@ const LaunchPage: React.FC = () => {
 
   // 处理进入游戏
   const handleStartGame = () => {
-    console.log('开始游戏');
-    // 这里可以添加跳转到游戏页面的逻辑
-    history.push('/game');
+    // 显示开发中占位符
+    alert('🚀 游戏功能开发中，敬请期待！\n\n在此阶段，游戏将进入：\n• 角色创建阶段\n• 装备选择阶段\n• 合作战斗阶段\n• 宝箱奖励阶段');
   };
 
 
