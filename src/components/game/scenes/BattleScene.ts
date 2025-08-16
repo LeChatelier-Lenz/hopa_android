@@ -6,6 +6,11 @@ interface GameData {
   player1Config: any;
   player2Config: any;
   monsters: any[];
+  backgroundUrl?: string | null;
+  consensusTheme?: {
+    title: string;
+    description: string;
+  };
 }
 
 interface Question {
@@ -36,9 +41,25 @@ export class BattleScene extends Phaser.Scene {
     super({ key: 'BattleScene' });
   }
 
+  init(data?: any) {
+    console.log('BattleScene init 接收到数据:', data);
+    
+    // 如果从MapScene传来数据，使用传来的数据
+    if (data && data.gameData) {
+      this.gameData = data.gameData;
+      console.log('使用MapScene传递的游戏数据:', this.gameData);
+    }
+  }
+
   preload() {
     // 由于我们使用placeholder图片，这里创建简单的几何形状作为占位符
     this.load.image('background', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    
+    // 加载AI生成的背景图（如果有）
+    if (this.gameData?.backgroundUrl) {
+      console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
+      this.load.image('ai_background', this.gameData.backgroundUrl);
+    }
     
     // 创建简单的角色和怪物占位符
     this.createPlaceholderAssets();
@@ -75,40 +96,53 @@ export class BattleScene extends Phaser.Scene {
     // 创建西湖背景占位符 (渐变蓝色)
     const graphics = this.add.graphics();
     graphics.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xB0E0E6, 0xB0E0E6, 1);
-    graphics.fillRect(0, 0, 800, 600);
-    graphics.generateTexture('westlake_bg', 800, 600);
+    graphics.fillRect(0, 0, 375, 667);
+    graphics.generateTexture('westlake_bg', 375, 667);
     graphics.destroy();
   }
 
   private createBackground() {
-    // 添加西湖风景背景
-    const bg = this.add.image(400, 300, 'westlake_bg');
-    bg.setDisplaySize(800, 600);
+    // 优先使用AI生成的背景图
+    if (this.gameData?.backgroundUrl && this.textures.exists('ai_background')) {
+      console.log('✅ 使用AI生成的背景图');
+      const bg = this.add.image(187.5, 333.5, 'ai_background');
+      bg.setDisplaySize(375, 667);
+      
+      // 添加半透明遮罩以提高UI可读性
+      const overlay = this.add.graphics();
+      overlay.fillStyle(0x000000, 0.2);
+      overlay.fillRect(0, 0, 375, 667);
+    } else {
+      console.log('📋 使用默认西湖背景');
+      // 添加默认西湖风景背景
+      const bg = this.add.image(187.5, 333.5, 'westlake_bg');
+      bg.setDisplaySize(375, 667);
+    }
 
-    // 添加西湖标志性建筑轮廓
+    // 添加西湖标志性建筑轮廓（保持原有装饰元素）
     const graphics = this.add.graphics();
     
     // 雷峰塔轮廓 (左侧)
     graphics.lineStyle(3, 0x8B4513);
     graphics.beginPath();
-    graphics.moveTo(100, 400);
-    graphics.lineTo(120, 200);
-    graphics.lineTo(140, 200);
-    graphics.lineTo(160, 400);
+    graphics.moveTo(50, 300);
+    graphics.lineTo(70, 150);
+    graphics.lineTo(90, 150);
+    graphics.lineTo(110, 300);
     graphics.closePath();
     graphics.strokePath();
     
     // 断桥轮廓 (右侧)
     graphics.lineStyle(3, 0x696969);
     graphics.beginPath();
-    graphics.moveTo(600, 450);
-    graphics.arc(650, 450, 50, Math.PI, 0, false);
-    graphics.lineTo(700, 450);
+    graphics.moveTo(265, 320);
+    graphics.arc(300, 320, 35, Math.PI, 0, false);
+    graphics.lineTo(335, 320);
     graphics.strokePath();
 
     // 添加文字标识
-    this.add.text(400, 50, '🏞️ 西湖约会大作战', {
-      fontSize: '32px',
+    this.add.text(187.5, 80, '🏞️ 共识征程大作战', {
+      fontSize: '24px',
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -117,25 +151,25 @@ export class BattleScene extends Phaser.Scene {
   private setupCharacters() {
     if (!this.gameData) return;
 
-    // 创建两个角色，站在战斗场景右侧
-    const char1 = new Character(this, 600, 350, this.gameData.player1Config);
-    const char2 = new Character(this, 650, 400, this.gameData.player2Config);
+    // 创建两个角色，站在战斗场景下方
+    const char1 = new Character(this, 150, 500, this.gameData.player1Config);
+    const char2 = new Character(this, 225, 500, this.gameData.player2Config);
     
     this.characters.push(char1, char2);
     
     // 添加角色名称
-    this.add.text(600, 320, char1.getName(), {
-      fontSize: '16px',
+    this.add.text(150, 470, char1.getName(), {
+      fontSize: '14px',
       color: '#333',
       backgroundColor: '#fff',
-      padding: { x: 8, y: 4 },
+      padding: { x: 6, y: 3 },
     }).setOrigin(0.5);
     
-    this.add.text(650, 370, char2.getName(), {
-      fontSize: '16px',
+    this.add.text(225, 470, char2.getName(), {
+      fontSize: '14px',
       color: '#333',
       backgroundColor: '#fff',
-      padding: { x: 8, y: 4 },
+      padding: { x: 6, y: 3 },
     }).setOrigin(0.5);
   }
 
@@ -148,8 +182,8 @@ export class BattleScene extends Phaser.Scene {
 
     // 根据游戏数据创建怪物
     this.gameData.monsters.forEach((monsterData, index) => {
-      const x = 200 + (index * 100);
-      const y = 300;
+      const x = 187.5;
+      const y = 250;
       const monster = new Monster(this, x, y, monsterData);
       this.monsters.push(monster);
       
@@ -160,7 +194,7 @@ export class BattleScene extends Phaser.Scene {
 
   private createDefaultMonsters() {
     // 创建预算狮王
-    const budgetLion = new Monster(this, 200, 300, {
+    const budgetLion = new Monster(this, 187.5, 250, {
       id: 'budget_lion',
       name: '预算狮王',
       type: 'budget',
@@ -170,11 +204,11 @@ export class BattleScene extends Phaser.Scene {
     });
     
     this.monsters.push(budgetLion);
-    this.createHealthBar('budget_lion', 200, 240);
+    this.createHealthBar('budget_lion', 187.5, 190);
     
     // 添加怪物名称
-    this.add.text(200, 210, '🦁 预算狮王', {
-      fontSize: '18px',
+    this.add.text(187.5, 160, '🦁 预算狮王', {
+      fontSize: '16px',
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -213,28 +247,28 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createUI() {
-    // 创建问题显示区域
-    this.questionText = this.add.text(400, 500, '', {
-      fontSize: '20px',
+    // 创建问题显示区域 - 竖屏布局
+    this.questionText = this.add.text(187.5, 370, '', {
+      fontSize: '16px',
       color: '#333',
       backgroundColor: '#fff',
-      padding: { x: 20, y: 10 },
-      wordWrap: { width: 700 },
+      padding: { x: 15, y: 8 },
+      wordWrap: { width: 320 },
     }).setOrigin(0.5);
 
-    // 创建答案选项按钮
+    // 创建答案选项按钮 - 垂直排列
     for (let i = 0; i < 4; i++) {
-      const x = 200 + (i * 150);
-      const y = 550;
+      const x = 187.5;
+      const y = 420 + (i * 50);
       
-      const button = this.add.rectangle(x, y, 140, 40, 0x4CAF50);
+      const button = this.add.rectangle(x, y, 320, 35, 0x4CAF50);
       button.setInteractive();
       button.setStrokeStyle(2, 0x2E7D32);
       
       const text = this.add.text(x, y, '', {
-        fontSize: '14px',
+        fontSize: '12px',
         color: '#fff',
-        wordWrap: { width: 130 },
+        wordWrap: { width: 300 },
       }).setOrigin(0.5);
       
       // 按钮点击事件
@@ -270,7 +304,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private generateQuestion() {
-    // Mock问题数据 - 基于西湖约会场景
+    // Mock问题数据 - 基于共识达成场景
     const questions: Question[] = [
       {
         id: 'budget_1',
@@ -464,11 +498,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private showFeedback(message: string) {
-    const feedback = this.add.text(400, 450, message, {
-      fontSize: '18px',
+    const feedback = this.add.text(187.5, 340, message, {
+      fontSize: '16px',
       color: '#ff5a5e',
       backgroundColor: '#fff',
-      padding: { x: 15, y: 8 },
+      padding: { x: 12, y: 6 },
     }).setOrigin(0.5);
     
     // 3秒后自动消失

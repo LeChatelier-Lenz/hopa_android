@@ -45,6 +45,7 @@ import { useHistory } from 'react-router-dom';
 import ConsensusRoom from '../components/ConsensusRoom';
 import CharacterCreator from '../components/CharacterCreator';
 import PhaserGame from '../components/game/PhaserGame';
+import { doubaoApi } from '../utils/doubaoApi';
 import backgroundImage from '../assets/images/background.png';
 import './launch.css';
 
@@ -78,6 +79,8 @@ const LaunchPage: React.FC = () => {
   const [roomId] = useState(() => Math.random().toString(36).substring(2, 8).toUpperCase());
   const [gamePhase, setGamePhase] = useState<'room' | 'character' | 'battle'>('room');
   const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
+  const [gameBackground, setGameBackground] = useState<string | null>(null);
+  const [isGeneratingBackground, setIsGeneratingBackground] = useState(false);
 
   // 模拟好友列表
   const friends: Friend[] = [
@@ -136,14 +139,45 @@ const LaunchPage: React.FC = () => {
     setGamePhase('room');
   };
 
+  // 生成游戏背景图
+  const generateGameBackground = async () => {
+    if (!consensusGoal.title || !consensusGoal.description) {
+      return;
+    }
+
+    setIsGeneratingBackground(true);
+    
+    try {
+      console.log('🎨 开始生成游戏背景...');
+      const backgroundUrl = await doubaoApi.generateGameBackground({
+        title: consensusGoal.title,
+        description: consensusGoal.description,
+      });
+      
+      setGameBackground(backgroundUrl);
+      console.log('✅ 背景图生成成功:', backgroundUrl);
+    } catch (error) {
+      console.error('❌ 背景图生成失败:', error);
+      // 失败时使用默认背景
+      setGameBackground(null);
+    } finally {
+      setIsGeneratingBackground(false);
+    }
+  };
 
   // 处理下一步
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep === 0 && (!consensusGoal.title || !consensusGoal.description)) {
       return; // 验证必填字段
     }
     
-    if (activeStep === 1) {
+    // 从步骤0到步骤1时，生成背景图
+    if (activeStep === 0) {
+      // 先跳转到下一步
+      setActiveStep(prev => prev + 1);
+      // 然后异步生成背景图
+      generateGameBackground();
+    } else if (activeStep === 1) {
       // 进入创建房间阶段
       setActiveStep(2);
     } else {
@@ -494,7 +528,7 @@ const LaunchPage: React.FC = () => {
               <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: '#ff5a5e', color: 'white' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    ⚔️ 西湖约会大作战
+                    ⚔️ 共识征程大作战
                   </Typography>
                   <Button
                     variant="outlined"
@@ -520,12 +554,26 @@ const LaunchPage: React.FC = () => {
                   gameData={{
                     player1Config: playerCharacters[0] || { name: '玩家1', style: 'casual' },
                     player2Config: playerCharacters[1] || { name: '玩家2', style: 'elegant' },
-                    monsters: []
+                    monsters: [],
+                    backgroundUrl: gameBackground,
+                    consensusTheme: {
+                      title: consensusGoal.title,
+                      description: consensusGoal.description
+                    }
                   }}
                   onGameEvent={(event, data) => {
                     console.log('游戏事件:', event, data);
                     if (event === 'victory') {
                       // 可以处理胜利后的逻辑
+                    } else if (event === 'returnHome') {
+                      // 返回主页
+                      history.push('/home');
+                    } else if (event === 'backToCharacter') {
+                      // 返回角色创建界面
+                      setGamePhase('character');
+                    } else if (event === 'startBattle') {
+                      // 开始战斗，但保持在battle阶段
+                      console.log('开始与怪物战斗:', data);
                     }
                   }}
                 />
@@ -553,100 +601,87 @@ const LaunchPage: React.FC = () => {
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* 背景图片顶部区域 */}
-      <Box
-        sx={{
-          position: 'relative',
-          height: '250px',
-          overflow: 'hidden',
-          background: '#ffffff',
-        }}
-      >
-        {/* 背景图片 */}
-        <Box
-          component="img"
-          src={backgroundImage}
-          alt="共识发起背景"
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'fill',
-            objectPosition: 'center',
-          }}
-        />
-        
-        {/* 头部内容 */}
-        <Box 
-          className="launch-header"
-          sx={{ 
-            position: 'relative',
-            zIndex: 2,
-            p: 2, 
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-          }}
-        >
-          <IconButton
-            className="back-button"
-            onClick={handleGoBack}
+      {/* 背景图片顶部区域 - 仅在前3步显示 */}
+      {activeStep < 3 && (
+        <>
+          <Box
             sx={{
-              position: 'absolute',
-              left: 16,
-              top: '30%',
-              transform: 'translateY(-50%)',
-              color: '#ff5a5e',
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 90, 94, 0.2)',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 1)',
-                color: '#ff5a5e',
-                transform: 'translateY(-50%) scale(1.05)',
-              },
+              position: 'relative',
+              height: '250px',
+              overflow: 'hidden',
+              background: '#ffffff',
             }}
           >
-            <ArrowBack />
-          </IconButton>
-          {/* <Typography 
-            variant="h4" 
-            align="center"
-            sx={{
-              color: '#ff5a5e',
-              fontWeight: 700,
-              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
-              fontSize: { xs: '1.5rem', sm: '2rem' },
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(10px)',
-              padding: '8px 16px',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 90, 94, 0.2)',
-            }}
-          >
-            发起共识
-          </Typography> */}
-        </Box>
-      </Box>
+            {/* 背景图片 */}
+            <Box
+              component="img"
+              src={backgroundImage}
+              alt="共识发起背景"
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'fill',
+                objectPosition: 'center',
+              }}
+            />
+            
+            {/* 头部内容 */}
+            <Box 
+              className="launch-header"
+              sx={{ 
+                position: 'relative',
+                zIndex: 2,
+                p: 2, 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+              }}
+            >
+              <IconButton
+                className="back-button"
+                onClick={handleGoBack}
+                sx={{
+                  position: 'absolute',
+                  left: 16,
+                  top: '30%',
+                  transform: 'translateY(-50%)',
+                  color: '#ff5a5e',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 90, 94, 0.2)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                    color: '#ff5a5e',
+                    transform: 'translateY(-50%) scale(1.05)',
+                  },
+                }}
+              >
+                <ArrowBack />
+              </IconButton>
+            </Box>
+          </Box>
 
-      {/* 步骤指示器 */}
-      <Box sx={{ 
-        p: 2, 
-        background: 'linear-gradient(135deg, #ffffff 0%, #fefefe 100%)',
-        borderBottom: '1px solid rgba(255, 90, 94, 0.1)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-      }}>
-        <Stepper activeStep={activeStep} alternativeLabel>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-      </Box>
+          {/* 步骤指示器 */}
+          <Box sx={{ 
+            p: 2, 
+            background: 'linear-gradient(135deg, #ffffff 0%, #fefefe 100%)',
+            borderBottom: '1px solid rgba(255, 90, 94, 0.1)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </Box>
+        </>
+      )}
 
       {/* 内容区域 */}
       <Box sx={{ 

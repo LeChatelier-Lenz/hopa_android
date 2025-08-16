@@ -7,6 +7,7 @@ interface VictoryData {
 
 export class VictoryScene extends Phaser.Scene {
   private victoryData?: VictoryData;
+  private eventCallback?: (event: string, data?: any) => void;
 
   constructor() {
     super({ key: 'VictoryScene' });
@@ -61,7 +62,7 @@ export class VictoryScene extends Phaser.Scene {
     // 创建庆祝背景
     const graphics = this.add.graphics();
     graphics.fillGradientStyle(0xFFD700, 0xFFD700, 0xFFA500, 0xFFA500, 1);
-    graphics.fillRect(0, 0, 800, 600);
+    graphics.fillRect(0, 0, 375, 667);
     
     // 添加烟花效果
     this.createFireworks();
@@ -104,8 +105,8 @@ export class VictoryScene extends Phaser.Scene {
 
   private showVictoryMessage() {
     // 胜利标题
-    const victoryTitle = this.add.text(400, 150, '🎉 恭喜！共识达成！', {
-      fontSize: '48px',
+    const victoryTitle = this.add.text(187.5, 120, '🎉 恭喜！共识达成！', {
+      fontSize: '32px',
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -121,15 +122,15 @@ export class VictoryScene extends Phaser.Scene {
     });
 
     // 副标题
-    this.add.text(400, 200, '你们成功击败了所有分歧怪兽！', {
-      fontSize: '24px',
+    this.add.text(187.5, 170, '你们成功击败了所有分歧怪兽！', {
+      fontSize: '18px',
       color: '#333',
     }).setOrigin(0.5);
   }
 
   private showTreasureChest() {
     // 显示宝箱
-    const chest = this.add.image(400, 300, 'treasure_chest');
+    const chest = this.add.image(187.5, 250, 'treasure_chest');
     chest.setScale(2);
     
     // 宝箱出现动画
@@ -145,7 +146,7 @@ export class VictoryScene extends Phaser.Scene {
 
     // 宝箱光芒效果
     const glow = this.add.graphics();
-    glow.setPosition(400, 300);
+    glow.setPosition(187.5, 250);
     
     let glowRadius = 0;
     this.tweens.add({
@@ -169,8 +170,8 @@ export class VictoryScene extends Phaser.Scene {
     });
 
     // 提示文字
-    this.add.text(400, 380, '点击宝箱获取奖励！', {
-      fontSize: '20px',
+    this.add.text(187.5, 320, '点击宝箱获取奖励！', {
+      fontSize: '16px',
       color: '#ff5a5e',
     }).setOrigin(0.5);
   }
@@ -192,15 +193,15 @@ export class VictoryScene extends Phaser.Scene {
   private showTreasureContents() {
     // 显示宝箱内容 - 共识卡片
     const cardBackground = this.add.graphics();
-    cardBackground.setPosition(400, 450);
+    cardBackground.setPosition(187.5, 380);
     cardBackground.fillStyle(0xffffff);
-    cardBackground.fillRoundedRect(-150, -75, 300, 150, 15);
+    cardBackground.fillRoundedRect(-140, -60, 280, 120, 15);
     cardBackground.lineStyle(3, 0xff5a5e);
-    cardBackground.strokeRoundedRect(-150, -75, 300, 150, 15);
+    cardBackground.strokeRoundedRect(-140, -60, 280, 120, 15);
 
     // 卡片标题
-    this.add.text(400, 400, '🎯 西湖约会共识卡', {
-      fontSize: '20px',
+    this.add.text(187.5, 340, '🎯 共识征程成果卡', {
+      fontSize: '16px',
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -214,8 +215,8 @@ export class VictoryScene extends Phaser.Scene {
     ];
 
     consensusText.forEach((text, index) => {
-      this.add.text(400, 420 + (index * 25), text, {
-        fontSize: '14px',
+      this.add.text(187.5, 360 + (index * 20), text, {
+        fontSize: '12px',
         color: '#333',
       }).setOrigin(0.5);
     });
@@ -240,25 +241,25 @@ export class VictoryScene extends Phaser.Scene {
 
   private showRewards() {
     // 显示获得的奖励列表
-    const rewardsTitle = this.add.text(400, 320, '🎁 获得奖励', {
-      fontSize: '24px',
+    const rewardsTitle = this.add.text(187.5, 450, '🎁 获得奖励', {
+      fontSize: '18px',
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const rewards = [
-      '💖 恋人默契度 +10',
-      '🏆 西湖探索达人称号',
-      '🎫 下次约会优惠券',
-      '📱 专属情侣头像',
+      '🤝 团队默契度 +10',
+      '🏆 共识达成专家称号',
+      '🎫 活动策划优惠券',
+      '📱 专属团队徽章',
     ];
 
     rewards.forEach((reward, index) => {
-      const rewardText = this.add.text(400, 360 + (index * 30), reward, {
-        fontSize: '16px',
+      const rewardText = this.add.text(187.5, 480 + (index * 25), reward, {
+        fontSize: '13px',
         color: '#333',
         backgroundColor: '#f0f0f0',
-        padding: { x: 10, y: 5 },
+        padding: { x: 8, y: 4 },
       }).setOrigin(0.5);
 
       // 奖励出现动画
@@ -273,17 +274,22 @@ export class VictoryScene extends Phaser.Scene {
 
     // 返回按钮
     this.time.delayedCall(3000, () => {
-      const returnButton = this.add.text(400, 550, '🏠 返回主页', {
-        fontSize: '20px',
+      const returnButton = this.add.text(187.5, 600, '🏠 返回主页', {
+        fontSize: '16px',
         color: '#fff',
         backgroundColor: '#ff5a5e',
-        padding: { x: 20, y: 10 },
+        padding: { x: 15, y: 8 },
       }).setOrigin(0.5);
 
       returnButton.setInteractive();
       returnButton.on('pointerdown', () => {
-        // 返回主页或重新开始
-        this.scene.start('BattleScene');
+        // 触发返回主页事件
+        if (this.eventCallback) {
+          this.eventCallback('returnHome');
+        } else {
+          // 如果没有回调，默认重新开始游戏
+          this.scene.start('BattleScene');
+        }
       });
 
       returnButton.on('pointerover', () => {
@@ -294,5 +300,10 @@ export class VictoryScene extends Phaser.Scene {
         returnButton.setStyle({ backgroundColor: '#ff5a5e' });
       });
     });
+  }
+
+  // 设置事件回调
+  setEventCallback(callback: (event: string, data?: any) => void) {
+    this.eventCallback = callback;
   }
 }
