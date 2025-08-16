@@ -21,6 +21,7 @@ import {
 import PeopleIcon from '@mui/icons-material/People';
 import AddIcon from '@mui/icons-material/Add';
 import ConsensusPostCard from '../components/ConsensusPostCard';
+import backgroundDecor from '../assets/images/background_orange.png';
 import './group.css';
 
 interface TabPanelProps {
@@ -200,8 +201,11 @@ const Group: React.FC = () => {
               color: '#ffffff', 
               fontWeight: 700,
               textAlign: 'center',
-              flex: 1,
+              // flex: 1,
               fontSize: { xs: '1.5rem', sm: '1.75rem' },
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
             }}>
               共识圈子
             </Typography>
@@ -209,9 +213,10 @@ const Group: React.FC = () => {
               variant="contained"
               startIcon={<AddIcon />}
               sx={{
+                width: '100px',
                 bgcolor: 'rgba(255,255,255,0.2)',
                 color: '#ffffff',
-                flex: 1,
+                // flex: 1,
                 justifyContent: 'flex-end',
                 '&:hover': {
                   bgcolor: 'rgba(255,255,255,0.3)',
@@ -225,6 +230,31 @@ const Group: React.FC = () => {
       </IonHeader>
       
       <IonContent fullscreen>
+        {/* 背景装饰 */}
+        <Box
+          sx={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '600px',
+            height: '800px',
+            zIndex: -1,
+            opacity: 0.2,
+            pointerEvents: 'none',
+          }}
+        >
+          <img
+            src={backgroundDecor}
+            alt="背景装饰"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
+          />
+        </Box>
+        
         <Box sx={{ p: 2 }}>
           {/* 切换栏 */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>

@@ -31,6 +31,8 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import UserAvatar from '../components/UserAvatar';
+import backgroundDecor from '../assets/images/background_orange.png';
+import userAvatar from '../assets/images/avatar.png';
 import './mine.css';
 
 const Mine: React.FC = () => {
@@ -38,8 +40,8 @@ const Mine: React.FC = () => {
   
   // 模拟用户数据
   const userData = {
-    name: '张三',
-    avatar: 'https://via.placeholder.com/80x80/ff5a5e/ffffff?text=张',
+    name: 'Julia',
+    avatar: userAvatar,
     hopaValue: 85,
     totalConsensus: 12,
     completedConsensus: 9,
@@ -160,6 +162,31 @@ const Mine: React.FC = () => {
       </IonHeader>
       
       <IonContent fullscreen>
+        {/* 背景装饰 */}
+        <Box
+          sx={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+           width: '600px',
+            height: '800px',
+            zIndex: -1,
+            opacity: 0.2,
+            pointerEvents: 'none',
+          }}
+        >
+          <img
+            src={backgroundDecor}
+            alt="背景装饰"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
+          />
+        </Box>
+        
         <Box sx={{ p: 2 }}>
           {/* 用户基本信息 */}
           <Card sx={{ mb: 3 }}>
@@ -169,7 +196,7 @@ const Mine: React.FC = () => {
                   username={userData.name}
                   src={userData.avatar}
                   size="large"
-                  sx={{ mr: 3 }}
+                  // sx={{ mr: 3 }}
                 />
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="h5" sx={{ fontWeight: 600, color: '#333', mb: 1 }}>
