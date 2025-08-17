@@ -1,3 +1,4 @@
+import type { Response } from 'express';
 import { DoubaoService } from './doubao.service';
 import { KimiService } from './kimi.service';
 import { GenerateImageDto, GenerateGameBackgroundDto, ChatDto, GenerateQuestionsDto } from './dto/ai.dto';
@@ -32,4 +33,30 @@ export declare class AiController {
     }>;
     proxyDoubao(body: any): Promise<any>;
     proxyKimi(body: any): Promise<any>;
+    proxyImage(imageUrl: string, res: Response): Promise<Response<any, Record<string, any>>>;
+    generateConflictQuestions(dto: any): Promise<{
+        success: boolean;
+        questions: {
+            id: string;
+            type: "choice" | "fill" | "sort";
+            question: string;
+            options?: string[];
+            correctAnswer?: number | string | string[];
+            explanation: string;
+            category: string;
+        }[];
+        message: string;
+    } | {
+        success: boolean;
+        questions: {
+            id: string;
+            type: string;
+            question: string;
+            options: string[];
+            correctAnswer: number;
+            explanation: string;
+            category: string;
+        }[];
+        message: string;
+    }>;
 }

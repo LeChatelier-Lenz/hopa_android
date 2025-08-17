@@ -94,6 +94,101 @@ export class KimiService {
     }
   }
 
+  async generateConflictQuestions(scenario: {
+    title: string;
+    description: string;
+    scenarioType?: string;
+    budget?: [number, number];
+    duration?: string;
+    preferences?: string[];
+  }): Promise<Array<{
+    id: string;
+    type: 'choice' | 'fill' | 'sort';
+    question: string;
+    options?: string[];
+    correctAnswer?: number | string | string[];
+    explanation: string;
+    category: string;
+  }>> {
+    const scenarioTypeText = scenario.scenarioType === 'friends' ? '朋友聚会' :
+                            scenario.scenarioType === 'family' ? '家庭活动' :
+                            scenario.scenarioType === 'team' ? '团队协作' :
+                            scenario.scenarioType === 'couples' ? '情侣约会' : '共识活动';
+    
+    const prompt = `
+基于以下${scenarioTypeText}场景，生成一系列关于冲突预测和解决的题目：
+- 活动主题：${scenario.title}
+- 活动描述：${scenario.description}
+${scenario.budget ? `- 预算范围：${scenario.budget[0]}-${scenario.budget[1]}元` : ''}
+${scenario.duration ? `- 活动时长：${scenario.duration}` : ''}
+${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` : ''}
+
+请生成3-5个关于冲突预测、协调和解决的题目，包含不同类型：选择题、排序题等。
+返回JSON格式数组：
+[
+  {
+    "id": "conflict_1",
+    "type": "choice",
+    "question": "题目描述",
+    "options": ["选项A", "选项B", "选项C", "选项D"],
+    "correctAnswer": 0,
+    "explanation": "答案解释",
+    "category": "budget"
+  }
+]
+
+题目类别(category)应该包含：budget（预算）、time（时间）、preference（偏好）、communication（沟通）等。
+`;
+
+    try {
+      const response = await this.chat([
+        { role: 'system', content: `你是${scenarioTypeText}冲突解决专家，擅长预测和化解群体决策中的分歧。` },
+        { role: 'user', content: prompt }
+      ]);
+
+      // 尝试解析JSON响应
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      } else {
+        throw new HttpException('AI响应格式不正确', HttpStatus.BAD_REQUEST);
+      }
+    } catch (error) {
+      console.error('生成冲突题目失败:', error);
+      // 返回默认题目
+      return [
+        {
+          id: 'conflict_1',
+          type: 'choice',
+          question: '在预算分歧时，你们通常如何协调？',
+          options: [
+            '优先考虑性价比最高的选项',
+            '平均分配预算到各个环节',
+            '重点投入到最重要的体验',
+            '寻找免费或低成本替代方案'
+          ],
+          correctAnswer: 2,
+          explanation: '重点投入能创造最佳共同体验',
+          category: 'budget'
+        },
+        {
+          id: 'conflict_2',
+          type: 'choice',
+          question: '时间安排产生冲突时，最好的解决方案是？',
+          options: [
+            '严格按照计划执行',
+            '灵活调整，优先重要活动',
+            '民主投票决定',
+            '轮流决定优先级'
+          ],
+          correctAnswer: 1,
+          explanation: '灵活性有助于应对突发情况',
+          category: 'time'
+        }
+      ];
+    }
+  }
+
   async generateConsensusQuestions(scenario: {
     title: string;
     description: string;

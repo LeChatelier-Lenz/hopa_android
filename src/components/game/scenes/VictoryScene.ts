@@ -1,8 +1,30 @@
 import Phaser from 'phaser';
 
+interface ConflictQuestion {
+  id: string;
+  type: 'choice' | 'fill' | 'sort';
+  question: string;
+  options?: string[];
+  correctAnswer?: number | string | string[];
+  explanation: string;
+  category: string;
+}
+
+interface ConsensusResult {
+  question: string;
+  selectedAnswer: string;
+  consistency: number;
+  category: string;
+}
+
 interface VictoryData {
   victory: boolean;
   characters: any[];
+  consensusResults?: ConsensusResult[];
+  consensusTheme?: {
+    title: string;
+    description: string;
+  };
 }
 
 export class VictoryScene extends Phaser.Scene {
@@ -191,52 +213,360 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private showTreasureContents() {
-    // 显示宝箱内容 - 共识卡片
+    // 显示宝箱内容 - 增强共识卡片
+    const cardWidth = this.scale.width * 0.85;
+    const cardHeight = this.scale.height * 0.4;
+    const cardX = this.scale.width / 2;
+    const cardY = this.scale.height * 0.6;
+    
     const cardBackground = this.add.graphics();
-    cardBackground.setPosition(187.5, 380);
-    cardBackground.fillStyle(0xffffff);
-    cardBackground.fillRoundedRect(-140, -60, 280, 120, 15);
-    cardBackground.lineStyle(3, 0xff5a5e);
-    cardBackground.strokeRoundedRect(-140, -60, 280, 120, 15);
+    cardBackground.setPosition(cardX, cardY);
+    cardBackground.fillStyle(0xffffff, 0.95);
+    cardBackground.fillRoundedRect(-cardWidth/2, -cardHeight/2, cardWidth, cardHeight, 20);
+    cardBackground.lineStyle(4, 0xff5a5e);
+    cardBackground.strokeRoundedRect(-cardWidth/2, -cardHeight/2, cardWidth, cardHeight, 20);
+    
+    // 添加卡片装饰渐变
+    const gradient = this.add.graphics();
+    gradient.setPosition(cardX, cardY);
+    gradient.fillGradientStyle(0xffe6e6, 0xffffff, 0xffe6e6, 0xffffff, 0.3);
+    gradient.fillRoundedRect(-cardWidth/2, -cardHeight/2, cardWidth, cardHeight, 20);
 
     // 卡片标题
-    this.add.text(187.5, 340, '🎯 共识征程成果卡', {
-      fontSize: '16px',
+    const titleY = cardY - cardHeight/2 + 30;
+    this.add.text(cardX, titleY, '🎯 共识征程成果卡', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
       color: '#ff5a5e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
-
-    // 共识内容
-    const consensusText = [
-      '📍 游览路线：雷峰塔 → 苏堤',
-      '💰 预算范围：200-300元',
-      '🍽️ 用餐选择：湖边特色餐厅',
-      '⏰ 游玩时长：全天深度游',
-    ];
-
-    consensusText.forEach((text, index) => {
-      this.add.text(187.5, 360 + (index * 20), text, {
-        fontSize: '12px',
-        color: '#333',
+    
+    // 显示主题
+    if (this.victoryData?.consensusTheme) {
+      this.add.text(cardX, titleY + 25, `主题: ${this.victoryData.consensusTheme.title}`, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+        color: '#666',
+        fontStyle: 'bold',
       }).setOrigin(0.5);
-    });
+    }
+
+    // 显示实际共识结果
+    this.displayConsensusResults(cardX, titleY + 50, cardWidth - 40);
 
     // 卡片出现动画
-    this.tweens.add({
-      targets: [cardBackground],
-      scaleX: 0,
-      scaleY: 0,
-      duration: 0,
-      onComplete: () => {
-        this.tweens.add({
-          targets: [cardBackground],
-          scaleX: 1,
-          scaleY: 1,
-          duration: 500,
-          ease: 'Back.easeOut',
-        });
-      }
+    const allElements = [cardBackground, gradient];
+    allElements.forEach(element => {
+      element.setScale(0);
+      this.tweens.add({
+        targets: element,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 600,
+        ease: 'Back.easeOut',
+        delay: 200
+      });
     });
+  }
+
+  private displayConsensusResults(startX: number, startY: number, maxWidth: number) {
+    if (!this.victoryData?.consensusResults || this.victoryData.consensusResults.length === 0) {
+      // 显示默认内容
+      const defaultConsensus = [
+        '📍 达成了基本共识',
+        '🤝 团队协作顶棒',
+        '✨ 冲突已解决',
+        '🎆 共识征程完成'
+      ];
+      
+      defaultConsensus.forEach((text, index) => {
+        const textObj = this.add.text(startX, startY + (index * 25), text, {
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+          color: '#333',
+          wordWrap: { width: maxWidth }
+        }).setOrigin(0.5);
+        
+        textObj.setAlpha(0);
+        this.tweens.add({
+          targets: textObj,
+          alpha: 1,
+          delay: (index + 1) * 300,
+          duration: 400
+        });
+      });
+      return;
+    }
+
+    // 显示实际共识结果
+    const categoryIcons = {
+      budget: '💰',
+      time: '⏰', 
+      attraction: '📍',
+      cuisine: '🍽️',
+      preference: '❤️',
+      communication: '💬',
+      principle: '🎯'
+    };
+
+    this.victoryData.consensusResults.forEach((result, index) => {
+      const icon = categoryIcons[result.category as keyof typeof categoryIcons] || '✅';
+      const consistencyEmoji = result.consistency >= 0.9 ? '🎆' : result.consistency >= 0.7 ? '🎉' : '✨';
+      
+      // 简化显示：只显示答案和一致性
+      const displayText = `${icon} ${result.selectedAnswer} ${consistencyEmoji}`;
+      
+      const textObj = this.add.text(startX, startY + (index * 28), displayText, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+        color: '#333',
+        wordWrap: { width: maxWidth },
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      // 每个结果逐个出现
+      textObj.setAlpha(0);
+      this.tweens.add({
+        targets: textObj,
+        alpha: 1,
+        delay: (index + 1) * 400,
+        duration: 500
+      });
+    });
+    
+    // 添加成就总结
+    const avgConsistency = this.victoryData.consensusResults.reduce((sum, r) => sum + r.consistency, 0) / this.victoryData.consensusResults.length;
+    const achievementText = avgConsistency >= 0.9 ? '🏆 完美共识达成!' : avgConsistency >= 0.7 ? '🎆 优秀共识成果!' : '🎉 成功达成共识!';
+    
+    const summaryY = startY + (this.victoryData.consensusResults.length * 28) + 20;
+    const summaryObj = this.add.text(startX, summaryY, achievementText, {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#ff5a5e',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    
+    summaryObj.setAlpha(0);
+    this.tweens.add({
+      targets: summaryObj,
+      alpha: 1,
+      delay: (this.victoryData.consensusResults.length + 1) * 400 + 500,
+      duration: 600
+    });
+    
+    // 添加查看详情按钮
+    const cardX = this.scale.width / 2; // 重新定义变量
+    this.addDetailViewButton(cardX, summaryY + 40);
+  }
+
+  private addDetailViewButton(x: number, y: number) {
+    const button = this.add.rectangle(x, y, this.scale.width * 0.4, this.scale.height * 0.05, 0x4CAF50, 0.9);
+    button.setInteractive();
+    button.setStrokeStyle(2, 0x2E7D32);
+    
+    const buttonText = this.add.text(x, y, '📋 查看完整共识方案', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    
+    button.on('pointerover', () => {
+      button.setFillStyle(0x66BB6A);
+      button.setScale(1.05);
+      buttonText.setScale(1.05);
+    });
+    
+    button.on('pointerout', () => {
+      button.setFillStyle(0x4CAF50);
+      button.setScale(1.0);
+      buttonText.setScale(1.0);
+    });
+    
+    button.on('pointerdown', () => {
+      this.showDetailedConsensusView();
+    });
+    
+    // 按钮出现动画
+    button.setAlpha(0);
+    buttonText.setAlpha(0);
+    this.tweens.add({
+      targets: [button, buttonText],
+      alpha: 1,
+      delay: 1000,
+      duration: 500
+    });
+  }
+
+  private showDetailedConsensusView() {
+    // 创建详细视图遮罩层
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.8);
+    overlay.fillRect(0, 0, this.scale.width, this.scale.height);
+    overlay.setInteractive();
+    
+    // 详细视图容器
+    const detailWidth = this.scale.width * 0.9;
+    const detailHeight = this.scale.height * 0.8;
+    const detailX = this.scale.width / 2;
+    const detailY = this.scale.height / 2;
+    
+    const detailContainer = this.add.graphics();
+    detailContainer.setPosition(detailX, detailY);
+    detailContainer.fillStyle(0xffffff, 0.98);
+    detailContainer.fillRoundedRect(-detailWidth/2, -detailHeight/2, detailWidth, detailHeight, 25);
+    detailContainer.lineStyle(4, 0xff5a5e);
+    detailContainer.strokeRoundedRect(-detailWidth/2, -detailHeight/2, detailWidth, detailHeight, 25);
+    
+    // 详细视图标题
+    const titleY = detailY - detailHeight/2 + 40;
+    this.add.text(detailX, titleY, '📊 完整共识方案详情', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.04}px`,
+      color: '#ff5a5e',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    
+    // 显示主题信息
+    if (this.victoryData?.consensusTheme) {
+      const themeY = titleY + 35;
+      this.add.text(detailX, themeY, `🎯 ${this.victoryData.consensusTheme.title}`, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+        color: '#333',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      
+      this.add.text(detailX, themeY + 25, this.victoryData.consensusTheme.description, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+        color: '#666',
+        wordWrap: { width: detailWidth - 60 },
+        align: 'center'
+      }).setOrigin(0.5);
+    }
+    
+    // 显示详细的共识结果
+    this.displayDetailedResults(detailX, titleY + 100, detailWidth - 60);
+    
+    // 关闭按钮
+    const closeButton = this.add.rectangle(detailX + detailWidth/2 - 30, detailY - detailHeight/2 + 30, 40, 40, 0xff5a5e, 0.9);
+    closeButton.setInteractive();
+    
+    const closeText = this.add.text(detailX + detailWidth/2 - 30, detailY - detailHeight/2 + 30, '✕', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    
+    closeButton.on('pointerdown', () => {
+      // 移除详细视图
+      [overlay, detailContainer, closeButton, closeText].forEach(obj => obj.destroy());
+      this.children.getAll().forEach(child => {
+        if (child.getData && child.getData('isDetailView')) {
+          child.destroy();
+        }
+      });
+    });
+    
+    // 标记详细视图元素
+    [overlay, detailContainer, closeButton, closeText].forEach(obj => {
+      obj.setData('isDetailView', true);
+    });
+    
+    // 出现动画
+    detailContainer.setScale(0);
+    this.tweens.add({
+      targets: detailContainer,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 400,
+      ease: 'Back.easeOut'
+    });
+  }
+
+  private displayDetailedResults(startX: number, startY: number, maxWidth: number) {
+    if (!this.victoryData?.consensusResults || this.victoryData.consensusResults.length === 0) {
+      const noDataText = this.add.text(startX, startY + 50, '暂无详细共识数据', {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+        color: '#999',
+      }).setOrigin(0.5);
+      noDataText.setData('isDetailView', true);
+      return;
+    }
+
+    // 分析共识数据
+    const totalQuestions = this.victoryData.consensusResults.length;
+    const averageConsistency = this.victoryData.consensusResults.reduce((sum, r) => sum + r.consistency, 0) / totalQuestions;
+    const perfectMatches = this.victoryData.consensusResults.filter(r => r.consistency >= 0.9).length;
+    
+    // 统计信息
+    const statsY = startY;
+    const statsText = [
+      `📊 共答题 ${totalQuestions} 道`,
+      `🎯 平均一致性 ${(averageConsistency * 100).toFixed(1)}%`,
+      `✨ 完全一致 ${perfectMatches} 题`,
+      `🤝 团队默契度 ${this.getTeamworkLevel(averageConsistency)}`
+    ];
+    
+    statsText.forEach((stat, index) => {
+      const text = this.add.text(startX, statsY + (index * 25), stat, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+        color: '#333',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+      text.setData('isDetailView', true);
+    });
+    
+    // 详细问答记录
+    const detailStartY = statsY + 120;
+    this.add.text(startX, detailStartY, '📝 详细决策记录', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#ff5a5e',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setData('isDetailView', true);
+    
+    // 滚动区域（简化版）
+    const scrollY = detailStartY + 35;
+    this.victoryData.consensusResults.forEach((result, index) => {
+      if (index >= 4) return; // 只显示前4个，避免溢出
+      
+      const itemY = scrollY + (index * 60);
+      const consistencyColor = result.consistency >= 0.9 ? '#00C851' : result.consistency >= 0.7 ? '#FF8A00' : '#FF4444';
+      const consistencyText = result.consistency >= 0.9 ? '完全一致' : result.consistency >= 0.7 ? '基本一致' : '存在分歧';
+      
+      // 问题文本（截断）
+      const questionText = result.question.length > 30 ? result.question.substring(0, 30) + '...' : result.question;
+      const questionObj = this.add.text(startX, itemY, questionText, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.018}px`,
+        color: '#333',
+        wordWrap: { width: maxWidth },
+        align: 'center'
+      }).setOrigin(0.5);
+      questionObj.setData('isDetailView', true);
+      
+      // 选择的答案
+      const answerObj = this.add.text(startX, itemY + 20, `选择: ${result.selectedAnswer}`, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.016}px`,
+        color: '#666'
+      }).setOrigin(0.5);
+      answerObj.setData('isDetailView', true);
+      
+      // 一致性标识
+      const consistencyObj = this.add.text(startX, itemY + 35, `${consistencyText} (${(result.consistency * 100).toFixed(0)}%)`, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.016}px`,
+        color: consistencyColor,
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+      consistencyObj.setData('isDetailView', true);
+    });
+    
+    if (this.victoryData.consensusResults.length > 4) {
+      const moreText = this.add.text(startX, scrollY + 250, `... 还有 ${this.victoryData.consensusResults.length - 4} 项决策`, {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.018}px`,
+        color: '#999',
+        fontStyle: 'italic'
+      }).setOrigin(0.5);
+      moreText.setData('isDetailView', true);
+    }
+  }
+
+  private getTeamworkLevel(consistency: number): string {
+    if (consistency >= 0.9) return '完美配合 ⭐⭐⭐';
+    if (consistency >= 0.8) return '默契十足 ⭐⭐';
+    if (consistency >= 0.7) return '配合良好 ⭐';
+    return '需要磨合 💪';
   }
 
   private showRewards() {

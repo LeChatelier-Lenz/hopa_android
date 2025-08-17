@@ -3,6 +3,16 @@ import { Monster } from '../entities/Monster';
 import type { MonsterConfig } from '../entities/Monster';
 import { Character } from '../entities/Character';
 
+interface ConflictQuestion {
+  id: string;
+  type: 'choice' | 'fill' | 'sort';
+  question: string;
+  options?: string[];
+  correctAnswer?: number | string | string[];
+  explanation: string;
+  category: string;
+}
+
 interface GameData {
   player1Config: any;
   player2Config: any;
@@ -12,6 +22,7 @@ interface GameData {
     title: string;
     description: string;
   };
+  conflictQuestions?: ConflictQuestion[];
 }
 
 interface Question {
@@ -24,7 +35,10 @@ interface Question {
 export class BattleScene extends Phaser.Scene {
   private characters: Character[] = [];
   private monsters: Monster[] = [];
-  private currentQuestion: Question | null = null;
+  private currentQuestion: Question | ConflictQuestion | null = null;
+  private aiQuestions: ConflictQuestion[] = [];
+  private currentQuestionIndex: number = 0;
+  private consensusResults: any[] = [];
   private player1Answer: string | null = null;
   private player2Answer: string | null = null;
   private battlePhase: 'waiting' | 'question' | 'answering' | 'result' | 'victory' = 'waiting';
@@ -56,15 +70,17 @@ export class BattleScene extends Phaser.Scene {
     // 创建简单的角色和怪物占位符
     this.createPlaceholderAssets();
     
-    // 加载AI生成的背景图（如果有）
+    // 加载AI生成的背景图（如果有）- 通过后端代理解决CORS问题
     if (this.gameData?.backgroundUrl) {
       console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
       try {
-        this.load.image('ai_background', this.gameData.backgroundUrl);
+        // 使用后端代理URL
+        const proxyUrl = `http://localhost:3001/ai/proxy/image?url=${encodeURIComponent(this.gameData.backgroundUrl)}`;
+        this.load.image('ai_background', proxyUrl);
         
         // 添加加载完成监听
         this.load.on('filecomplete-image-ai_background', () => {
-          console.log('✅ AI背景图加载完成');
+          console.log('✅ AI背景图加载完成（通过后端代理）');
         });
         
         // 添加加载错误监听  
@@ -88,6 +104,14 @@ export class BattleScene extends Phaser.Scene {
     this.load.image('character2', '/src/assets/game/characters/cha2.jpg');
     this.load.image('character3', '/src/assets/game/characters/cha3.jpg');
     this.load.image('character4', '/src/assets/game/characters/cha4.jpg');
+    
+    // 加载装备图片
+    this.load.image('equipment_coin', '/src/assets/game/equipment/Coin.jpg');
+    this.load.image('equipment_clover', '/src/assets/game/equipment/Four-leaf-clover.jpg');
+    this.load.image('equipment_gemstone', '/src/assets/game/equipment/Gemstone.jpg');
+    this.load.image('equipment_key', '/src/assets/game/equipment/Key.jpg');
+    this.load.image('equipment_magic_bar', '/src/assets/game/equipment/magic_bar.jpg');
+    this.load.image('equipment_ring', '/src/assets/game/equipment/ring.jpg');
   }
 
   create() {
@@ -106,12 +130,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createPlaceholderAssets() {
-    // 创建西湖背景占位符 (渐变蓝色)
+    // 获取设备像素比例
+    const pixelRatio = window.devicePixelRatio || 1;
+    
+    // 创建西湖背景占位符 (渐变蓝色) - 高清版本
     const graphics = this.add.graphics();
     graphics.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xB0E0E6, 0xB0E0E6, 1);
     graphics.fillRect(0, 0, this.scale.width, this.scale.height);
     graphics.generateTexture('westlake_bg', this.scale.width, this.scale.height);
     graphics.destroy();
+    
+    // 优化文字渲染将在创建文字时单独设置
   }
 
   private createBackground() {
@@ -135,25 +164,26 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // 添加游戏标题
-    this.add.text(this.scale.width / 2, this.scale.height * 0.08, '🏞️ 共识征程大作战', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.04}px`,
+    const titleText = this.add.text(this.scale.width / 2, this.scale.height * 0.06, '🏞️ 共识征程大作战', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.05}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       stroke: '#000000',
       strokeThickness: 4,
     }).setOrigin(0.5);
+    titleText.setResolution(window.devicePixelRatio || 1);
   }
 
   private setupCharacters() {
     if (!this.gameData) return;
 
-    // 角色位置在屏幕底部
-    const char1X = this.scale.width * 0.35;
-    const char2X = this.scale.width * 0.65;
-    const charY = this.scale.height * 0.85;
-    const charSize = Math.min(this.scale.width, this.scale.height) * 0.08;
+    // 角色位置调整到中部，增大尺寸
+    const char1X = this.scale.width * 0.25;
+    const char2X = this.scale.width * 0.75;
+    const charY = this.scale.height * 0.42; // 进一步上移
+    const charSize = Math.min(this.scale.width, this.scale.height) * 0.15; // 增大角色尺寸
 
-    // 创建两个角色
+    // 创建两个角色 - 高清渲染
     const char1Sprite = this.add.image(char1X, charY, 'character1');
     char1Sprite.setDisplaySize(charSize, charSize);
     
@@ -171,38 +201,47 @@ export class BattleScene extends Phaser.Scene {
     this.characters.push(char1, char2);
     
     // 添加角色名称
-    this.add.text(char1X, charY + charSize/2 + 15, '玩家1', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+    const player1Text = this.add.text(char1X, charY + charSize/2 + 20, '玩家1', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 2,
     }).setOrigin(0.5);
+    player1Text.setResolution(window.devicePixelRatio || 1);
     
-    this.add.text(char2X, charY + charSize/2 + 15, '玩家2', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+    const player2Text = this.add.text(char2X, charY + charSize/2 + 20, '玩家2', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 2,
     }).setOrigin(0.5);
+    player2Text.setResolution(window.devicePixelRatio || 1);
   }
 
   private setupMonsters() {
-    // 创建怪物 - 位置在屏幕中上部
+    // 创建怪物 - 位置在屏幕中上部，与角色保持适当距离
     const monsterX = this.scale.width / 2;
-    const monsterY = this.scale.height * 0.3;
-    const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.25;
+    const monsterY = this.scale.height * 0.22; // 进一步上移
+    const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.25; // 增大怪物尺寸
     
-    // 使用真实怪物图片
+    // 使用真实怪物图片 - 高清渲染
     const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
     monsterSprite.setDisplaySize(monsterSize, monsterSize);
+    
+    // 根据AI题目数量动态设置怪物血量
+    const questionCount = this.gameData?.conflictQuestions?.length || 5;
+    const baseHealth = questionCount * 60; // 每个题目60血量
+    const totalHealth = Math.max(baseHealth, 300); // 最少300血量
+    
+    console.log(`🎯 根据${questionCount}个AI题目设置怪物血量: ${totalHealth}`);
     
     // 创建怪物对象（用于逻辑）
     const monsterData: MonsterConfig = {
       id: 'consensus_monster',
       name: '共识守护兽',
       type: 'budget',
-      health: 500,
-      maxHealth: 500,
+      health: totalHealth,
+      maxHealth: totalHealth,
       attacks: ['冲突制造', '分歧强化'],
     };
     
@@ -216,13 +255,14 @@ export class BattleScene extends Phaser.Scene {
     this.createHealthBar('consensus_monster', monsterX, monsterY - monsterSize/2 - 30);
     
     // 添加怪物名称
-    this.add.text(monsterX, monsterY - monsterSize/2 - 60, '🦁 共识守护兽', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.03}px`,
+    const monsterNameText = this.add.text(monsterX, monsterY - monsterSize/2 - 70, '🦁 共识守护兽', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       stroke: '#ff5a5e',
       strokeThickness: 3,
     }).setOrigin(0.5);
+    monsterNameText.setResolution(window.devicePixelRatio || 1);
   }
 
 
@@ -273,48 +313,83 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createUI() {
-    // 创建问题显示区域 - 位于怪物和角色之间
-    const questionY = this.scale.height * 0.55;
-    this.questionText = this.add.text(this.scale.width / 2, questionY, '', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#ffffff',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      padding: { x: 15, y: 8 },
-      wordWrap: { width: this.scale.width * 0.9 },
-      stroke: '#000000',
-      strokeThickness: 1,
-    }).setOrigin(0.5);
+    // 创建底部题目显示框 - 缩小高度，上移位置
+    const bottomFrameHeight = this.scale.height * 0.32; // 占屏幕高度的32%
+    const bottomFrameY = this.scale.height - bottomFrameHeight;
+    
+    // 底部框背景
+    const bottomFrame = this.add.graphics();
+    bottomFrame.fillStyle(0x2E3F4F, 0.95); // 深蓝灰色，半透明
+    bottomFrame.fillRoundedRect(
+      this.scale.width * 0.05, 
+      bottomFrameY + this.scale.height * 0.02, 
+      this.scale.width * 0.9, 
+      bottomFrameHeight - this.scale.height * 0.04, 
+      20
+    );
+    
+    // 底部框边框
+    bottomFrame.lineStyle(3, 0xFFD700, 1); // 金色边框
+    bottomFrame.strokeRoundedRect(
+      this.scale.width * 0.05, 
+      bottomFrameY + this.scale.height * 0.02, 
+      this.scale.width * 0.9, 
+      bottomFrameHeight - this.scale.height * 0.04, 
+      20
+    );
 
-    // 创建答案选项按钮 - 垂直排列，位于角色上方
-    const buttonStartY = this.scale.height * 0.62;
-    const buttonSpacing = this.scale.height * 0.05;
-    const buttonWidth = this.scale.width * 0.85;
-    const buttonHeight = this.scale.height * 0.04;
+    // 创建问题显示区域 - 位于底部框内
+    const questionY = bottomFrameY + this.scale.height * 0.06;
+    this.questionText = this.add.text(this.scale.width / 2, questionY, '', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+      padding: { x: 15, y: 8 },
+      wordWrap: { width: this.scale.width * 0.85 },
+      align: 'center',
+    }).setOrigin(0.5);
+    this.questionText.setResolution(window.devicePixelRatio || 1);
+
+    // 创建答案选项按钮 - 垂直排列，位于底部框内
+    const buttonStartY = bottomFrameY + this.scale.height * 0.12;
+    const buttonSpacing = this.scale.height * 0.042;
+    const buttonWidth = this.scale.width * 0.82;
+    const buttonHeight = this.scale.height * 0.038;
     
     for (let i = 0; i < 4; i++) {
       const x = this.scale.width / 2;
       const y = buttonStartY + (i * buttonSpacing);
       
+      // 按钮背景
       const button = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x4CAF50, 0.9);
       button.setInteractive();
       button.setStrokeStyle(2, 0x2E7D32);
       
+      // 按钮文本
       const text = this.add.text(x, y, '', {
-        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
         color: '#ffffff',
+        fontStyle: 'bold',
         wordWrap: { width: buttonWidth * 0.9 },
-        stroke: '#000000',
-        strokeThickness: 1,
+        align: 'center',
       }).setOrigin(0.5);
+      text.setResolution(window.devicePixelRatio || 1);
       
       // 按钮点击事件
       button.on('pointerdown', () => this.handleAnswerClick(i));
-      button.on('pointerover', () => button.setFillStyle(0x66BB6A));
-      button.on('pointerout', () => button.setFillStyle(0x4CAF50));
+      button.on('pointerover', () => {
+        button.setFillStyle(0x66BB6A);
+        button.setScale(1.02);
+      });
+      button.on('pointerout', () => {
+        button.setFillStyle(0x4CAF50);
+        button.setScale(1.0);
+      });
       
       this.optionButtons.push(button);
       this.optionTexts.push(text);
     }
+
   }
 
   private startNextRound() {
@@ -322,7 +397,9 @@ export class BattleScene extends Phaser.Scene {
       // 所有怪物都被击败，进入胜利场景
       this.scene.start('VictoryScene', { 
         victory: true,
-        characters: this.characters.map(char => char.getConfig())
+        characters: this.characters.map(char => char.getConfig()),
+        consensusResults: this.consensusResults,
+        consensusTheme: this.gameData?.consensusTheme
       });
       return;
     }
@@ -340,8 +417,19 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private generateQuestion() {
-    // Mock问题数据 - 基于共识达成场景
-    const questions: Question[] = [
+    // 优先使用AI生成的冲突问题
+    if (this.gameData?.conflictQuestions && this.gameData.conflictQuestions.length > 0) {
+      // 如果还有AI题目，使用下一个AI题目
+      if (this.currentQuestionIndex < this.gameData.conflictQuestions.length) {
+        this.currentQuestion = this.gameData.conflictQuestions[this.currentQuestionIndex];
+        this.currentQuestionIndex++;
+        console.log(`🤖 使用AI题目 ${this.currentQuestionIndex}/${this.gameData.conflictQuestions.length}:`, this.currentQuestion?.question);
+        return;
+      }
+    }
+    
+    // 如果没有AI题目或已用完，使用备用题目
+    const fallbackQuestions: Question[] = [
       {
         id: 'budget_1',
         text: '你们计划在西湖边的餐厅用餐，预算应该如何安排？',
@@ -388,18 +476,21 @@ export class BattleScene extends Phaser.Scene {
       }
     ];
 
-    // 随机选择一个问题
-    this.currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+    // 随机选择一个备用问题
+    this.currentQuestion = fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];
+    console.log('📋 使用备用题目:', this.currentQuestion?.text);
   }
 
   private displayQuestion() {
     if (!this.currentQuestion) return;
     
-    // 显示问题文本
-    this.questionText?.setText(this.currentQuestion.text);
+    // 显示问题文本 - 兼容新旧格式
+    const questionText = ('question' in this.currentQuestion) ? this.currentQuestion.question : this.currentQuestion.text || '';
+    this.questionText?.setText(questionText);
     
-    // 显示选项
-    this.currentQuestion.options.forEach((option, index) => {
+    // 显示选项 - 兼容新旧格式  
+    const options = this.currentQuestion.options || [];
+    options.forEach((option, index) => {
       if (this.optionTexts[index]) {
         this.optionTexts[index].setText(option);
       }
@@ -409,7 +500,7 @@ export class BattleScene extends Phaser.Scene {
     });
     
     // 隐藏多余的按钮
-    for (let i = this.currentQuestion.options.length; i < this.optionButtons.length; i++) {
+    for (let i = options.length; i < this.optionButtons.length; i++) {
       this.optionButtons[i].setVisible(false);
       this.optionTexts[i].setText('');
     }
@@ -418,7 +509,8 @@ export class BattleScene extends Phaser.Scene {
   private handleAnswerClick(optionIndex: number) {
     if (!this.currentQuestion || this.battlePhase !== 'question') return;
     
-    const selectedOption = this.currentQuestion.options[optionIndex];
+    const options = this.currentQuestion.options || [];
+    const selectedOption = options[optionIndex];
     
     // 模拟双人答案 (实际应该来自外部输入)
     if (!this.player1Answer) {
@@ -428,8 +520,9 @@ export class BattleScene extends Phaser.Scene {
       // 模拟玩家2自动选择 (2秒后)
       setTimeout(() => {
         if (!this.player2Answer && this.currentQuestion) {
-          const randomIndex = Math.floor(Math.random() * this.currentQuestion.options.length);
-          this.player2Answer = this.currentQuestion.options[randomIndex];
+          const options = this.currentQuestion.options || [];
+          const randomIndex = Math.floor(Math.random() * options.length);
+          this.player2Answer = options[randomIndex];
           this.showFeedback(`玩家2选择: ${this.player2Answer}`);
           this.processAnswers();
         }
@@ -443,6 +536,22 @@ export class BattleScene extends Phaser.Scene {
     // 计算一致性得分
     const consistency = this.player1Answer === this.player2Answer ? 1.0 : 0.5;
     const damage = Math.floor(consistency * 30 + Math.random() * 20); // 30-50伤害
+    
+    // 记录共识结果
+    const questionText = ('question' in this.currentQuestion) ? this.currentQuestion.question : this.currentQuestion.text || '';
+    const category = this.currentQuestion.category || 'general';
+    this.consensusResults.push({
+      question: questionText,
+      selectedAnswer: this.player1Answer,
+      consistency: consistency,
+      category: category
+    });
+    
+    console.log('📊 共识结果记录:', {
+      question: questionText.substring(0, 20) + '...',
+      answer: this.player1Answer,
+      consistency: consistency
+    });
     
     // 对怪物造成伤害
     if (this.monsters.length > 0) {

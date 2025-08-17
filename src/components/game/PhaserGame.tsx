@@ -29,15 +29,22 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
     if (!gameRef.current) return;
 
     try {
+      // 获取设备像素比例
+      const pixelRatio = window.devicePixelRatio || 1;
+      
       // 获取窗口尺寸
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       
-      // Phaser游戏配置 - 全屏移动端优化
+      // 高清渲染尺寸
+      const renderWidth = windowWidth * pixelRatio;
+      const renderHeight = windowHeight * pixelRatio;
+      
+      // Phaser游戏配置 - 高清移动端优化
       const config: Phaser.Types.Core.GameConfig = {
-        type: Phaser.AUTO,
-        width: windowWidth,
-        height: windowHeight,
+        type: Phaser.WEBGL, // 强制使用WebGL以获得更好性能
+        width: renderWidth,
+        height: renderHeight,
         parent: gameRef.current,
         backgroundColor: '#87CEEB', // 天空蓝背景
         scene: [LoadingScene, BattleScene, VictoryScene], // 从LoadingScene开始
@@ -51,13 +58,25 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: windowWidth,
-          height: windowHeight,
+          width: renderWidth,
+          height: renderHeight,
         },
         render: {
           antialias: true,
           pixelArt: false,
+          powerPreference: 'high-performance', // 使用高性能GPU
+          transparent: false,
+          clearBeforeRender: true,
+          preserveDrawingBuffer: false,
+          premultipliedAlpha: true,
+          failIfMajorPerformanceCaveat: false,
+          desynchronized: true, // 减少输入延迟
         },
+        dom: {
+          createContainer: true
+        },
+        // 高清渲染配置
+        canvasStyle: `width: ${windowWidth}px; height: ${windowHeight}px;`
       };
 
       // 创建Phaser游戏实例
@@ -162,14 +181,14 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
   return (
     <Box
       sx={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
         overflow: 'hidden',
+        margin: 0,
+        padding: 0,
       }}
     >
       {isLoading && (
@@ -186,7 +205,6 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
             justifyContent: 'center',
             bgcolor: 'rgba(255, 255, 255, 0.9)',
             zIndex: 10,
-            borderRadius: 2,
           }}
         >
           <Typography variant="h6" gutterBottom sx={{ color: '#ff5a5e' }}>
@@ -204,9 +222,11 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '100vw',
-          height: '100vh',
+          width: '100%',
+          height: '100%',
           overflow: 'hidden',
+          margin: 0,
+          padding: 0,
         }}
       />
     </Box>

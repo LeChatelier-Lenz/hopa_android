@@ -50,10 +50,12 @@ export class LoadingScene extends Phaser.Scene {
     const monsterExtension = monsterIndex === 1 ? 'png' : 'jpg';
     this.load.image('monster_main', `/src/assets/game/monsters/monster${monsterIndex}.${monsterExtension}`);
     
-    // 加载AI生成的背景图（如果有）
+    // 加载AI生成的背景图（如果有）- 通过后端代理解决CORS问题
     if (this.gameData?.backgroundUrl) {
       console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
-      this.load.image('ai_background', this.gameData.backgroundUrl);
+      // 使用后端代理URL
+      const proxyUrl = `http://localhost:3001/ai/proxy/image?url=${encodeURIComponent(this.gameData.backgroundUrl)}`;
+      this.load.image('ai_background', proxyUrl);
     }
   }
 

@@ -52,40 +52,59 @@ export class Character {
   private showEquipment() {
     if (!this.config.equipment) return;
 
-    const equipmentIcons: string[] = [];
+    const equipmentSprites: { key: string; name: string }[] = [];
     
-    // 根据装备添加图标
+    // 根据装备添加图片 - 匹配合适的图片资源
     if (this.config.equipment.budgetAmulet?.enabled) {
-      equipmentIcons.push('💰');
+      equipmentSprites.push({ key: 'equipment_clover', name: '预算护符' }); // 四叶草护符
     }
     if (this.config.equipment.timeCompass?.enabled) {
-      equipmentIcons.push('🧭');
+      equipmentSprites.push({ key: 'equipment_magic_bar', name: '时间罗盘' }); // 魔法棒作为罗盘
     }
     if (this.config.equipment.attractionShield?.enabled) {
-      equipmentIcons.push('🛡️');
+      equipmentSprites.push({ key: 'equipment_gemstone', name: '景点护盾' }); // 宝石护盾
     }
     if (this.config.equipment.cuisineGem?.enabled) {
-      equipmentIcons.push('🔮');
+      equipmentSprites.push({ key: 'equipment_ring', name: '美食宝石' }); // 戒指上的宝石
     }
 
-    // 在角色周围显示装备图标
-    equipmentIcons.forEach((icon, index) => {
-      const angle = (index / equipmentIcons.length) * Math.PI * 2;
-      const radius = 30;
+    // 在角色周围显示装备图片
+    equipmentSprites.forEach((equipment, index) => {
+      const angle = (index / equipmentSprites.length) * Math.PI * 2;
+      const radius = 35;
       const iconX = this.x + Math.cos(angle) * radius;
       const iconY = this.y + Math.sin(angle) * radius;
 
-      const iconText = this.scene.add.text(iconX, iconY, icon, {
-        fontSize: '16px',
+      // 创建装备图片
+      const equipmentSprite = this.scene.add.image(iconX, iconY, equipment.key);
+      equipmentSprite.setDisplaySize(20, 20); // 设置装备图片大小
+      equipmentSprite.setOrigin(0.5);
+
+      // 添加装备名称标签（可选）
+      const nameText = this.scene.add.text(iconX, iconY + 15, equipment.name, {
+        fontSize: '10px',
+        color: '#ffffff',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        padding: { x: 2, y: 1 },
       }).setOrigin(0.5);
 
       // 装备图标旋转动画
       this.scene.tweens.add({
-        targets: iconText,
+        targets: [equipmentSprite, nameText],
         angle: 360,
-        duration: 5000,
+        duration: 8000,
         repeat: -1,
         ease: 'Linear',
+      });
+
+      // 装备图标浮动动画
+      this.scene.tweens.add({
+        targets: [equipmentSprite, nameText],
+        y: iconY - 5,
+        duration: 2000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
       });
     });
   }

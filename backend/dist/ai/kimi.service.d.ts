@@ -12,6 +12,22 @@ export declare class KimiService {
         temperature?: number;
         max_tokens?: number;
     }): Promise<string>;
+    generateConflictQuestions(scenario: {
+        title: string;
+        description: string;
+        scenarioType?: string;
+        budget?: [number, number];
+        duration?: string;
+        preferences?: string[];
+    }): Promise<Array<{
+        id: string;
+        type: 'choice' | 'fill' | 'sort';
+        question: string;
+        options?: string[];
+        correctAnswer?: number | string | string[];
+        explanation: string;
+        category: string;
+    }>>;
     generateConsensusQuestions(scenario: {
         title: string;
         description: string;

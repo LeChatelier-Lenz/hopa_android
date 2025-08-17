@@ -1,5 +1,6 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { DoubaoService } from './doubao.service';
 import { KimiService } from './kimi.service';
 import { 
@@ -133,5 +134,102 @@ export class AiController {
 
     const data = await response.json();
     return data;
+  }
+
+  @ApiOperation({ summary: '代理图片请求 - 解决CORS问题' })
+  @ApiResponse({ status: 200, description: '图片代理成功' })
+  @Get('proxy/image')
+  async proxyImage(@Query('url') imageUrl: string, @Res() res: Response) {
+    try {
+      if (!imageUrl) {
+        return res.status(400).json({ error: '缺少图片URL参数' });
+      }
+
+      // 请求原始图片
+      const response = await fetch(imageUrl);
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: '图片请求失败' });
+      }
+
+      // 获取图片数据和类型
+      const imageBuffer = await response.arrayBuffer();
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+      // 设置适当的响应头
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 缓存1天
+
+      // 返回图片数据
+      return res.send(Buffer.from(imageBuffer));
+    } catch (error) {
+      console.error('图片代理错误:', error);
+      return res.status(500).json({ error: '图片代理失败' });
+    }
+  }
+
+  @ApiOperation({ summary: '生成冲突预测题目' })
+  @ApiResponse({ status: 200, description: '冲突题目生成成功' })
+  @ApiResponse({ status: 400, description: 'API请求失败' })
+  @Post('kimi/generate-conflict-questions')
+  async generateConflictQuestions(@Body() dto: any) {
+    try {
+      // 使用 Kimi 服务生成冲突预测题目
+      const questions = await this.kimiService.generateConflictQuestions({
+        title: dto.title,
+        description: dto.description,
+        scenarioType: dto.scenarioType,
+        budget: dto.budget,
+        duration: dto.duration,
+        preferences: dto.preferences,
+      });
+
+      return {
+        success: true,
+        questions,
+        message: '冲突预测题目生成成功',
+      };
+    } catch (error) {
+      console.error('冲突题目生成失败:', error);
+      
+      // 返回默认题目作为后备
+      const defaultQuestions = [
+        {
+          id: 'conflict_1',
+          type: 'choice',
+          question: '在预算分歧时，你们通常如何协调？',
+          options: [
+            '优先考虑性价比最高的选项',
+            '平均分配预算到各个环节',
+            '重点投入到最重要的体验',
+            '寻找免费或低成本替代方案'
+          ],
+          correctAnswer: 2,
+          explanation: '重点投入能创造最佳共同体验',
+          category: 'budget'
+        },
+        {
+          id: 'conflict_2',
+          type: 'choice',
+          question: '时间安排产生冲突时，最好的解决方案是？',
+          options: [
+            '严格按照计划执行',
+            '灵活调整，优先重要活动',
+            '民主投票决定',
+            '轮流决定优先级'
+          ],
+          correctAnswer: 1,
+          explanation: '灵活性有助于应对突发情况',
+          category: 'time'
+        }
+      ];
+
+      return {
+        success: true,
+        questions: defaultQuestions,
+        message: '使用默认冲突题目',
+      };
+    }
   }
 }
