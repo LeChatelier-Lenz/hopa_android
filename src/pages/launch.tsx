@@ -560,7 +560,8 @@ const LaunchPage: React.FC = () => {
                     consensusTheme: {
                       title: consensusGoal.title,
                       description: consensusGoal.description
-                    }
+                    },
+                    maxParticipants: consensusGoal.maxParticipants
                   }}
                   onGameEvent={(event, data) => {
                     console.log('游戏事件:', event, data);

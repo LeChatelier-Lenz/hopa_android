@@ -24,6 +24,7 @@ interface GameData {
     description: string;
   };
   conflictQuestions?: ConflictQuestion[];
+  maxParticipants?: number;
 }
 
 interface Question {
@@ -168,13 +169,13 @@ export class BattleScene extends Phaser.Scene {
       bg.setDisplaySize(this.scale.width, this.scale.height);
     }
 
-    // 添加游戏标题
-    const titleText = this.add.text(this.scale.width / 2, this.scale.height * 0.06, '🏞️ 共识征程大作战', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.05}px`,
+    // 添加游戏标题 - 移到更高位置避免被遮挡
+    const titleText = this.add.text(this.scale.width / 2, this.scale.height * 0.03, '共识征程大作战', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.045}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4,
+      strokeThickness: 3,
     }).setOrigin(0.5);
     titleText.setResolution(window.devicePixelRatio || 1);
   }
@@ -182,52 +183,83 @@ export class BattleScene extends Phaser.Scene {
   private setupCharacters() {
     if (!this.gameData) return;
 
-    // 角色位置调整到中部，增大尺寸
-    const char1X = this.scale.width * 0.25;
-    const char2X = this.scale.width * 0.75;
-    const charY = this.scale.height * 0.42; // 进一步上移
-    const charSize = Math.min(this.scale.width, this.scale.height) * 0.15; // 增大角色尺寸
+    // 根据maxParticipants确定角色数量
+    const maxParticipants = this.gameData.maxParticipants || 2;
+    const actualCharacterCount = Math.min(maxParticipants, 4); // 最多显示4个角色
+    
+    console.log(`🎮 根据房间设置显示${actualCharacterCount}个角色 (房间最大人数: ${maxParticipants})`);
 
-    // 创建两个角色 - 高清渲染
-    const char1Sprite = this.add.image(char1X, charY, 'character1');
-    char1Sprite.setDisplaySize(charSize, charSize);
+    const charY = this.scale.height * 0.42; 
+    const charSize = Math.min(this.scale.width, this.scale.height) * 0.18; // 适当调整尺寸以适应更多角色
+
+    // 计算角色位置
+    const characterImages = ['character1', 'character2', 'character3', 'character4'];
+    const characterNames = ['玩家1', '玩家2', '玩家3', '玩家4'];
     
-    const char2Sprite = this.add.image(char2X, charY, 'character2');
-    char2Sprite.setDisplaySize(charSize, charSize);
-    
-    // 使用真实角色而不是Character类
-    const char1 = new Character(this, char1X, charY, this.gameData.player1Config);
-    const char2 = new Character(this, char2X, charY, this.gameData.player2Config);
-    
-    // 隐藏原来的sprite，使用我们的图片
-    char1.getSprite().setVisible(false);
-    char2.getSprite().setVisible(false);
-    
-    this.characters.push(char1, char2);
-    
-    // 添加角色名称
-    const player1Text = this.add.text(char1X, charY + charSize/2 + 20, '玩家1', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#ffffff',
+    for (let i = 0; i < actualCharacterCount; i++) {
+      // 根据角色数量计算水平位置
+      let charX: number;
+      if (actualCharacterCount === 1) {
+        charX = this.scale.width * 0.5; // 单个角色居中
+      } else if (actualCharacterCount === 2) {
+        charX = this.scale.width * (i === 0 ? 0.3 : 0.7); // 两个角色
+      } else if (actualCharacterCount === 3) {
+        charX = this.scale.width * (0.2 + i * 0.3); // 三个角色
+      } else {
+        charX = this.scale.width * (0.15 + i * 0.23); // 四个角色
+      }
+
+      // 创建角色图片
+      const charSprite = this.add.image(charX, charY, characterImages[i]);
+      charSprite.setDisplaySize(charSize, charSize);
+      charSprite.setInteractive();
+      charSprite.on('pointerdown', () => this.showEquipmentDetails(i));
+      charSprite.on('pointerover', () => charSprite.setScale(1.05));
+      charSprite.on('pointerout', () => charSprite.setScale(1.0));
+      
+      // 创建角色对象
+      const characterConfig = i === 0 ? this.gameData.player1Config : this.gameData.player2Config;
+      const character = new Character(this, charX, charY, characterConfig);
+      character.getSprite().setVisible(false); // 隐藏默认sprite
+      
+      this.characters.push(character);
+      
+      // 添加角色名称
+      const playerText = this.add.text(charX, charY + charSize/2 + 25, characterNames[i], {
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+        color: '#ffffff',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(0.5);
+      playerText.setResolution(window.devicePixelRatio || 1);
+    }
+
+    // 添加点击提示
+    const clickHint = this.add.text(this.scale.width / 2, this.scale.height * 0.52,
+      `💡 点击角色查看装备详情 (${actualCharacterCount}/${maxParticipants}人准备就绪)`, {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.020}px`,
+      color: '#FFD700',
+      fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 2,
+      strokeThickness: 1,
+      align: 'center',
     }).setOrigin(0.5);
-    player1Text.setResolution(window.devicePixelRatio || 1);
-    
-    const player2Text = this.add.text(char2X, charY + charSize/2 + 20, '玩家2', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 2,
-    }).setOrigin(0.5);
-    player2Text.setResolution(window.devicePixelRatio || 1);
+    clickHint.setResolution(window.devicePixelRatio || 1);
+
+    // 3秒后隐藏提示
+    setTimeout(() => {
+      if (clickHint && clickHint.scene) {
+        clickHint.destroy();
+      }
+    }, 3000);
   }
 
   private setupMonsters() {
-    // 创建怪物 - 位置在屏幕中上部，与角色保持适当距离
+    // 创建怪物 - 位置在屏幕中上部，与角色保持适当距离  
     const monsterX = this.scale.width / 2;
-    const monsterY = this.scale.height * 0.22; // 进一步上移
-    const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.25; // 增大怪物尺寸
+    const monsterY = this.scale.height * 0.22;
+    const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.32; // 显著增大怪物尺寸
     
     // 使用真实怪物图片 - 高清渲染
     const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
@@ -259,13 +291,13 @@ export class BattleScene extends Phaser.Scene {
     // 创建怪物血条
     this.createHealthBar('consensus_monster', monsterX, monsterY - monsterSize/2 - 30);
     
-    // 添加怪物名称
-    const monsterNameText = this.add.text(monsterX, monsterY - monsterSize/2 - 70, '🦁 共识守护兽', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
+    // 添加怪物名称 - 调整位置避免与标题重叠
+    const monsterNameText = this.add.text(monsterX, monsterY - monsterSize/2 - 50, '共识守护兽', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.032}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       stroke: '#ff5a5e',
-      strokeThickness: 3,
+      strokeThickness: 2,
     }).setOrigin(0.5);
     monsterNameText.setResolution(window.devicePixelRatio || 1);
   }
@@ -343,15 +375,16 @@ export class BattleScene extends Phaser.Scene {
       20
     );
 
-    // 创建问题显示区域 - 位于底部框内
+    // 创建问题显示区域 - 位于底部框内，增大字体并确保换行
     const questionY = bottomFrameY + this.scale.height * 0.06;
     this.questionText = this.add.text(this.scale.width / 2, questionY, '', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
       color: '#ffffff',
       fontStyle: 'bold',
-      padding: { x: 15, y: 8 },
-      wordWrap: { width: this.scale.width * 0.85 },
+      padding: { x: 15, y: 10 },
+      wordWrap: { width: this.scale.width * 0.82, useAdvancedWrap: true },
       align: 'center',
+      lineSpacing: 4,
     }).setOrigin(0.5);
     this.questionText.setResolution(window.devicePixelRatio || 1);
 
@@ -370,13 +403,14 @@ export class BattleScene extends Phaser.Scene {
       button.setInteractive();
       button.setStrokeStyle(2, 0x2E7D32);
       
-      // 按钮文本
+      // 按钮文本 - 增大字体并优化换行
       const text = this.add.text(x, y, '', {
-        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+        fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.027}px`,
         color: '#ffffff',
         fontStyle: 'bold',
-        wordWrap: { width: buttonWidth * 0.9 },
+        wordWrap: { width: buttonWidth * 0.88, useAdvancedWrap: true },
         align: 'center',
+        lineSpacing: 2,
       }).setOrigin(0.5);
       text.setResolution(window.devicePixelRatio || 1);
       
@@ -547,6 +581,9 @@ export class BattleScene extends Phaser.Scene {
         // 移除旧的事件监听器
         this.optionButtons[index].removeAllListeners();
         
+        // 确保按钮可交互
+        this.optionButtons[index].setInteractive();
+        
         // 添加排序专用的点击事件
         this.optionButtons[index].on('pointerdown', () => this.handleSortClick(index));
         this.optionButtons[index].on('pointerover', () => {
@@ -554,7 +591,8 @@ export class BattleScene extends Phaser.Scene {
           this.optionButtons[index].setScale(1.02);
         });
         this.optionButtons[index].on('pointerout', () => {
-          this.optionButtons[index].setFillStyle(0x2196F3);
+          const currentColor = this.selectedSortIndex === index ? 0xFF9800 : 0x2196F3;
+          this.optionButtons[index].setFillStyle(currentColor);
           this.optionButtons[index].setScale(1.0);
         });
       }
@@ -567,7 +605,26 @@ export class BattleScene extends Phaser.Scene {
     }
     
     // 显示排序说明
-    this.questionText?.setText(this.questionText.text + '\n\n💡 点击两个选项来交换位置');
+    this.questionText?.setText(this.questionText.text + '\n\n💡 排序题：点击两个选项来交换位置');
+    
+    // 添加额外的提示文字
+    const hintText = this.add.text(this.scale.width / 2, this.scale.height * 0.72, 
+      '蓝色按钮可点击排序 | 橙色表示已选中', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+      color: '#FFD700',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1,
+      align: 'center',
+    }).setOrigin(0.5);
+    hintText.setResolution(window.devicePixelRatio || 1);
+    
+    // 3秒后隐藏提示
+    setTimeout(() => {
+      if (hintText && hintText.scene) {
+        hintText.destroy();
+      }
+    }, 3000);
   }
 
   private handleSortClick(optionIndex: number) {
@@ -880,5 +937,149 @@ export class BattleScene extends Phaser.Scene {
       monsters: this.monsters.map(monster => monster.getConfig()),
       currentQuestion: this.currentQuestion,
     };
+  }
+
+  // 显示装备详情
+  private showEquipmentDetails(characterIndex: number) {
+    console.log('🎒 显示角色装备详情:', characterIndex);
+    
+    // 获取角色配置
+    const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
+    
+    // 模拟装备数据（实际项目中应从用户配置获取）
+    const mockEquipment = {
+      budgetAmulet: {
+        enabled: true,
+        range: [500, 2000] as [number, number],
+        name: '预算护符',
+        description: '控制消费范围'
+      },
+      timeCompass: {
+        enabled: true,
+        duration: 'full-day',
+        name: '时间指南针',  
+        description: '规划活动时长'
+      },
+      attractionShield: {
+        enabled: true,
+        preferences: ['雷峰塔', '苏堤', '断桥残雪'],
+        name: '景点盾牌',
+        description: '优先访问景点'
+      },
+      cuisineGem: {
+        enabled: true,
+        types: ['杭帮菜', '小吃', '茶饮'],
+        name: '美食宝石',
+        description: '餐饮偏好设定'
+      }
+    };
+
+    // 创建装备详情弹窗
+    this.createEquipmentModal(characterIndex, mockEquipment);
+  }
+
+  private createEquipmentModal(characterIndex: number, equipment: any) {
+    // 创建遮罩背景
+    const modalBg = this.add.graphics();
+    modalBg.fillStyle(0x000000, 0.7);
+    modalBg.fillRect(0, 0, this.scale.width, this.scale.height);
+    modalBg.setInteractive();
+    modalBg.on('pointerdown', () => this.closeEquipmentModal(modalBg, modal));
+
+    // 创建装备详情面板
+    const modal = this.add.graphics();
+    const modalWidth = this.scale.width * 0.85;
+    const modalHeight = this.scale.height * 0.7;
+    const modalX = (this.scale.width - modalWidth) / 2;
+    const modalY = (this.scale.height - modalHeight) / 2;
+
+    // 模态框背景
+    modal.fillStyle(0x2E3F4F, 0.95);
+    modal.fillRoundedRect(modalX, modalY, modalWidth, modalHeight, 15);
+    
+    // 模态框边框
+    modal.lineStyle(3, 0xFFD700, 1);
+    modal.strokeRoundedRect(modalX, modalY, modalWidth, modalHeight, 15);
+
+    // 标题
+    const titleText = this.add.text(this.scale.width / 2, modalY + 30, 
+      `玩家${characterIndex + 1} 装备详情`, {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
+      color: '#FFD700',
+      fontStyle: 'bold',
+      align: 'center',
+    }).setOrigin(0.5);
+
+    // 装备列表
+    const equipmentTexts: Phaser.GameObjects.Text[] = [];
+    let yOffset = modalY + 80;
+    
+    Object.entries(equipment).forEach(([key, item]: [string, any], index) => {
+      if (item.enabled) {
+        // 装备名称
+        const nameText = this.add.text(modalX + 20, yOffset, 
+          `🎒 ${item.name}`, {
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+          color: '#ffffff',
+          fontStyle: 'bold',
+        });
+        equipmentTexts.push(nameText);
+
+        // 装备描述
+        const descText = this.add.text(modalX + 20, yOffset + 25, 
+          item.description, {
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+          color: '#CCCCCC',
+        });
+        equipmentTexts.push(descText);
+
+        // 装备数值
+        let valueText = '';
+        if (item.range) {
+          valueText = `预算范围: ¥${item.range[0]} - ¥${item.range[1]}`;
+        } else if (item.duration) {
+          valueText = `时长设置: ${item.duration}`;
+        } else if (item.preferences) {
+          valueText = `偏好: ${item.preferences.join(', ')}`;
+        } else if (item.types) {
+          valueText = `类型: ${item.types.join(', ')}`;
+        }
+
+        const valueTextObj = this.add.text(modalX + 20, yOffset + 45, 
+          valueText, {
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.020}px`,
+          color: '#90EE90',
+          wordWrap: { width: modalWidth - 60, useAdvancedWrap: true }
+        });
+        equipmentTexts.push(valueTextObj);
+
+        yOffset += 90;
+      }
+    });
+
+    // 关闭按钮
+    const closeButton = this.add.text(this.scale.width / 2, modalY + modalHeight - 40,
+      '点击任意处关闭', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#FFD700',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    // 保存引用以便关闭
+    (modal as any).equipmentTexts = [...equipmentTexts, titleText, closeButton];
+  }
+
+  private closeEquipmentModal(modalBg: Phaser.GameObjects.Graphics, modal: Phaser.GameObjects.Graphics) {
+    modalBg.destroy();
+    modal.destroy();
+    
+    // 销毁所有文本对象
+    if ((modal as any).equipmentTexts) {
+      (modal as any).equipmentTexts.forEach((text: Phaser.GameObjects.Text) => {
+        if (text && text.scene) {
+          text.destroy();
+        }
+      });
+    }
   }
 }

@@ -16,6 +16,7 @@ interface PhaserGameProps {
       title: string;
       description: string;
     };
+    maxParticipants?: number;
   };
 }
 
