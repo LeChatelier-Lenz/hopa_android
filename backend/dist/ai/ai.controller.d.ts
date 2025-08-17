@@ -34,6 +34,22 @@ export declare class AiController {
     proxyDoubao(body: any): Promise<any>;
     proxyKimi(body: any): Promise<any>;
     proxyImage(imageUrl: string, res: Response): Promise<Response<any, Record<string, any>>>;
+    generateEquipmentContent(dto: any): Promise<{
+        success: boolean;
+        equipment: {
+            cuisineGem: {
+                types: string[];
+                name: string;
+                description: string;
+            };
+            attractionShield: {
+                preferences: string[];
+                name: string;
+                description: string;
+            };
+        };
+        message: string;
+    }>;
     generateConflictQuestions(dto: any): Promise<{
         success: boolean;
         questions: {

@@ -49,6 +49,7 @@ export class BattleScene extends Phaser.Scene {
   private battlePhase: 'waiting' | 'question' | 'answering' | 'result' | 'victory' = 'waiting';
   private eventCallback?: (event: string, data?: any) => void;
   private gameData?: GameData;
+  private loadingElements: Phaser.GameObjects.GameObject[] = [];
   
   // UI元素
   private questionText?: Phaser.GameObjects.Text;
@@ -265,12 +266,13 @@ export class BattleScene extends Phaser.Scene {
     const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
     monsterSprite.setDisplaySize(monsterSize, monsterSize);
     
-    // 根据AI题目数量动态设置怪物血量
-    const questionCount = this.gameData?.conflictQuestions?.length || 5;
-    const baseHealth = questionCount * 60; // 每个题目60血量
-    const totalHealth = Math.max(baseHealth, 300); // 最少300血量
+    // 根据题目总数设置怪物血量：AI题目(7个) + 固定题目(1个) = 8题总计
+    const aiQuestionCount = 7; // 固定AI题目数量
+    const fixedQuestionCount = 1; // 固定备用题目数量
+    const totalQuestionCount = aiQuestionCount + fixedQuestionCount;
+    const totalHealth = totalQuestionCount * 60; // 每题60血量，8题共480血量
     
-    console.log(`🎯 根据${questionCount}个AI题目设置怪物血量: ${totalHealth}`);
+    console.log(`🎯 设置怪物血量: AI题目${aiQuestionCount}个 + 固定题目${fixedQuestionCount}个 = 总计${totalQuestionCount}题，血量${totalHealth}`);
     
     // 创建怪物对象（用于逻辑）
     const monsterData: MonsterConfig = {
@@ -456,68 +458,32 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private generateQuestion() {
-    // 优先使用AI生成的冲突问题
+    // 优先使用AI生成的冲突问题，但最多使用7个
     if (this.gameData?.conflictQuestions && this.gameData.conflictQuestions.length > 0) {
-      // 如果还有AI题目，使用下一个AI题目
-      if (this.currentQuestionIndex < this.gameData.conflictQuestions.length) {
+      // 如果还有AI题目且未超过7个，使用下一个AI题目
+      if (this.currentQuestionIndex < Math.min(this.gameData.conflictQuestions.length, 7)) {
         this.currentQuestion = this.gameData.conflictQuestions[this.currentQuestionIndex];
         this.currentQuestionIndex++;
-        console.log(`🤖 使用AI题目 ${this.currentQuestionIndex}/${this.gameData.conflictQuestions.length}:`, this.currentQuestion?.question);
+        console.log(`🤖 使用AI题目 ${this.currentQuestionIndex}/7:`, this.currentQuestion?.question);
         return;
       }
     }
     
-    // 如果没有AI题目或已用完，使用通用备用题目
-    const fallbackQuestions: Question[] = [
-      {
-        id: 'budget_1',
-        text: '在预算有限的情况下，你们更倾向于哪种消费方式？',
-        options: [
-          '优先保证基本需求',
-          '平均分配预算',
-          '重点投入体验项目',
-          '寻找性价比最高选择'
-        ],
-        category: 'budget'
-      },
-      {
-        id: 'time_1',
-        text: '时间安排产生分歧时，你们会如何协调？',
-        options: [
-          '严格按照原计划执行',
-          '灵活调整重要活动',
-          '民主投票决定',
-          '轮流安排优先级'
-        ],
-        category: 'time'
-      },
-      {
-        id: 'preference_1',
-        text: '当大家兴趣偏好不同时，最好的解决方案是？',
-        options: [
-          '选择大多数人喜欢的',
-          '尝试融合不同偏好',
-          '轮流满足每个人',
-          '寻找新的共同兴趣'
-        ],
-        category: 'preference'
-      },
-      {
-        id: 'communication_1',
-        text: '遇到意见分歧时，你们通常如何沟通？',
-        options: [
-          '开诚布公直接讨论',
-          '先冷静再慢慢商量',
-          '找第三方协调',
-          '各自妥协一点'
-        ],
-        category: 'communication'
-      }
-    ];
+    // AI题目用完后，使用最重要的固定题目（沟通相关）
+    const mostImportantQuestion: Question = {
+      id: 'communication_core',
+      text: '遇到意见分歧时，你们通常如何沟通？',
+      options: [
+        '开诚布公直接讨论',
+        '先冷静再慢慢商量',
+        '找第三方协调',
+        '各自妥协一点'
+      ],
+      category: 'communication'
+    };
 
-    // 随机选择一个备用问题
-    this.currentQuestion = fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];
-    console.log('📋 使用备用题目:', this.currentQuestion?.text);
+    this.currentQuestion = mostImportantQuestion;
+    console.log('📋 使用核心固定题目(沟通):', this.currentQuestion?.text);
   }
 
   private displayQuestion() {
@@ -940,14 +906,26 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // 显示装备详情
-  private showEquipmentDetails(characterIndex: number) {
+  private async showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
     
     // 获取角色配置
     const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
     
-    // 模拟装备数据（实际项目中应从用户配置获取）
-    const mockEquipment = {
+    // 先显示加载状态
+    this.showEquipmentLoadingModal(characterIndex);
+    
+    // 根据共识主题生成AI定制装备内容
+    let customEquipment;
+    try {
+      customEquipment = await this.generateCustomEquipment();
+    } catch (error) {
+      console.error('🔥 AI装备生成失败，使用默认内容:', error);
+      customEquipment = this.getDefaultEquipment();
+    }
+    
+    // 构建完整装备数据
+    const equipment = {
       budgetAmulet: {
         enabled: true,
         range: [500, 2000] as [number, number],
@@ -962,20 +940,129 @@ export class BattleScene extends Phaser.Scene {
       },
       attractionShield: {
         enabled: true,
-        preferences: ['雷峰塔', '苏堤', '断桥残雪'],
-        name: '景点盾牌',
-        description: '优先访问景点'
+        preferences: customEquipment.attractionShield.preferences,
+        name: customEquipment.attractionShield.name,
+        description: customEquipment.attractionShield.description
       },
       cuisineGem: {
         enabled: true,
-        types: ['杭帮菜', '小吃', '茶饮'],
-        name: '美食宝石',
-        description: '餐饮偏好设定'
+        types: customEquipment.cuisineGem.types,
+        name: customEquipment.cuisineGem.name,
+        description: customEquipment.cuisineGem.description
       }
     };
 
-    // 创建装备详情弹窗
-    this.createEquipmentModal(characterIndex, mockEquipment);
+    // 关闭加载窗口，显示装备详情
+    this.closeLoadingModal();
+    this.createEquipmentModal(characterIndex, equipment);
+  }
+
+  private async generateCustomEquipment() {
+    const consensusTheme = this.gameData?.consensusTheme;
+    if (!consensusTheme) {
+      return this.getDefaultEquipment();
+    }
+
+    const response = await fetch(`${apiConfig.getBackendUrl()}/kimi/generate-equipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: consensusTheme.title,
+        description: consensusTheme.description,
+        scenarioType: 'general',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('🎨 AI生成装备内容:', data.equipment);
+    return data.equipment;
+  }
+
+  private getDefaultEquipment() {
+    return {
+      cuisineGem: {
+        types: ['当地特色菜', '小吃', '饮品'],
+        name: '美食宝珠',
+        description: '探索当地美食文化'
+      },
+      attractionShield: {
+        preferences: ['热门景点', '文化古迹', '自然风光'],
+        name: '景点盾牌',
+        description: '发现精彩目的地'
+      }
+    };
+  }
+
+  private showEquipmentLoadingModal(characterIndex: number) {
+    // 创建精美的加载提示
+    this.loadingElements = [];
+    
+    const modalBg = this.add.graphics();
+    modalBg.fillStyle(0x000000, 0.8);
+    modalBg.fillRect(0, 0, this.scale.width, this.scale.height);
+    modalBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
+    
+    // 创建加载框
+    const loadingBox = this.add.graphics();
+    const boxWidth = this.scale.width * 0.7;
+    const boxHeight = 150;
+    const boxX = (this.scale.width - boxWidth) / 2;
+    const boxY = (this.scale.height - boxHeight) / 2;
+    
+    loadingBox.fillGradientStyle(0x2E3F4F, 0x2E3F4F, 0x1A252F, 0x1A252F, 1);
+    loadingBox.fillRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
+    loadingBox.lineStyle(2, 0xFFD700, 1);
+    loadingBox.strokeRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
+    
+    const loadingText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, 
+      '🎨 AI正在定制装备内容', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+      color: '#FFD700',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const tipText = this.add.text(this.scale.width / 2, this.scale.height / 2 + 15, 
+      '根据你的共识目标生成专属美食和景点推荐...', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
+      color: '#CCCCCC',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    // 添加加载动画
+    const dots = this.add.text(this.scale.width / 2, this.scale.height / 2 + 45, 
+      '●●●', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#FFD700',
+    }).setOrigin(0.5);
+
+    // 点点动画
+    this.tweens.add({
+      targets: dots,
+      alpha: { from: 0.3, to: 1 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Power2.easeInOut'
+    });
+
+    this.loadingElements = [modalBg, loadingBox, loadingText, tipText, dots];
+  }
+
+  private closeLoadingModal() {
+    if (this.loadingElements) {
+      this.loadingElements.forEach(element => {
+        if (element && element.scene) {
+          element.destroy();
+        }
+      });
+      this.loadingElements = [];
+    }
   }
 
   private createEquipmentModal(characterIndex: number, equipment: any) {
@@ -983,9 +1070,8 @@ export class BattleScene extends Phaser.Scene {
     const modalBg = this.add.graphics();
     modalBg.fillStyle(0x000000, 0.7);
     modalBg.fillRect(0, 0, this.scale.width, this.scale.height);
-    modalBg.setInteractive();
-    modalBg.on('pointerdown', () => this.closeEquipmentModal(modalBg, modal));
-
+    modalBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
+    
     // 创建装备详情面板
     const modal = this.add.graphics();
     const modalWidth = this.scale.width * 0.85;
@@ -1065,21 +1151,18 @@ export class BattleScene extends Phaser.Scene {
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // 保存引用以便关闭
-    (modal as any).equipmentTexts = [...equipmentTexts, titleText, closeButton];
+    // 收集所有需要销毁的元素
+    const allModalElements = [modalBg, modal, titleText, closeButton, ...equipmentTexts];
+    
+    // 设置点击关闭事件
+    modalBg.on('pointerdown', () => this.closeEquipmentModal(allModalElements));
   }
 
-  private closeEquipmentModal(modalBg: Phaser.GameObjects.Graphics, modal: Phaser.GameObjects.Graphics) {
-    modalBg.destroy();
-    modal.destroy();
-    
-    // 销毁所有文本对象
-    if ((modal as any).equipmentTexts) {
-      (modal as any).equipmentTexts.forEach((text: Phaser.GameObjects.Text) => {
-        if (text && text.scene) {
-          text.destroy();
-        }
-      });
-    }
+  private closeEquipmentModal(elements: Phaser.GameObjects.GameObject[]) {
+    elements.forEach(element => {
+      if (element && element.scene) {
+        element.destroy();
+      }
+    });
   }
 }

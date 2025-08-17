@@ -28,6 +28,25 @@ export declare class KimiService {
         explanation: string;
         category: string;
     }>>;
+    generateEquipmentContent(scenario: {
+        title: string;
+        description: string;
+        scenarioType?: string;
+        budget?: [number, number];
+        duration?: string;
+        preferences?: string[];
+    }): Promise<{
+        cuisineGem: {
+            types: string[];
+            name: string;
+            description: string;
+        };
+        attractionShield: {
+            preferences: string[];
+            name: string;
+            description: string;
+        };
+    }>;
     generateConsensusQuestions(scenario: {
         title: string;
         description: string;

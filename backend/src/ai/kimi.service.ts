@@ -123,7 +123,7 @@ ${scenario.budget ? `- 预算范围：${scenario.budget[0]}-${scenario.budget[1]
 ${scenario.duration ? `- 活动时长：${scenario.duration}` : ''}
 ${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` : ''}
 
-请生成3-5个关于冲突预测、协调和解决的题目，包含不同类型：选择题、排序题等。
+请生成7个关于冲突预测、协调和解决的题目，包含不同类型：选择题、排序题等。
 返回JSON格式数组：
 [
   {
@@ -186,6 +186,91 @@ ${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` 
           category: 'time'
         }
       ];
+    }
+  }
+
+  async generateEquipmentContent(scenario: {
+    title: string;
+    description: string;
+    scenarioType?: string;
+    budget?: [number, number];
+    duration?: string;
+    preferences?: string[];
+  }): Promise<{
+    cuisineGem: {
+      types: string[];
+      name: string;
+      description: string;
+    };
+    attractionShield: {
+      preferences: string[];
+      name: string;
+      description: string;
+    };
+  }> {
+    const scenarioTypeText = scenario.scenarioType === 'friends' ? '朋友聚会' :
+                            scenario.scenarioType === 'family' ? '家庭活动' :
+                            scenario.scenarioType === 'team' ? '团队协作' :
+                            scenario.scenarioType === 'couples' ? '情侣约会' : '共识活动';
+    
+    const prompt = `
+基于以下${scenarioTypeText}场景，为美食宝珠和景点盾牌生成定制化内容：
+- 活动主题：${scenario.title}
+- 活动描述：${scenario.description}
+${scenario.budget ? `- 预算范围：${scenario.budget[0]}-${scenario.budget[1]}元` : ''}
+${scenario.duration ? `- 活动时长：${scenario.duration}` : ''}
+${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` : ''}
+
+请根据主题和地点生成相关的美食类型和景点推荐。
+
+返回JSON格式：
+{
+  "cuisineGem": {
+    "types": ["美食类型1", "美食类型2", "美食类型3"],
+    "name": "美食宝珠",
+    "description": "针对此次活动的餐饮偏好"
+  },
+  "attractionShield": {
+    "preferences": ["景点1", "景点2", "景点3"],
+    "name": "景点盾牌", 
+    "description": "推荐访问的特色景点"
+  }
+}
+
+要求：
+1. 美食类型要符合当地特色和活动性质
+2. 景点要与主题相关且具有代表性
+3. 考虑预算和时长限制
+`;
+
+    try {
+      const response = await this.chat([
+        { role: 'system', content: `你是${scenarioTypeText}规划专家，熟悉各地特色美食和热门景点。` },
+        { role: 'user', content: prompt }
+      ]);
+
+      // 尝试解析JSON响应
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      } else {
+        throw new HttpException('AI响应格式不正确', HttpStatus.BAD_REQUEST);
+      }
+    } catch (error) {
+      console.error('生成装备内容失败:', error);
+      // 返回默认内容
+      return {
+        cuisineGem: {
+          types: ['当地特色菜', '小吃', '饮品'],
+          name: '美食宝珠',
+          description: '探索当地美食文化'
+        },
+        attractionShield: {
+          preferences: ['热门景点', '文化古迹', '自然风光'],
+          name: '景点盾牌',
+          description: '发现精彩目的地'
+        }
+      };
     }
   }
 

@@ -169,6 +169,51 @@ export class AiController {
     }
   }
 
+  @ApiOperation({ summary: '生成装备内容' })
+  @ApiResponse({ status: 200, description: '装备内容生成成功' })
+  @ApiResponse({ status: 400, description: 'API请求失败' })
+  @Post('kimi/generate-equipment')
+  async generateEquipmentContent(@Body() dto: any) {
+    try {
+      const equipment = await this.kimiService.generateEquipmentContent({
+        title: dto.title,
+        description: dto.description,
+        scenarioType: dto.scenarioType,
+        budget: dto.budget,
+        duration: dto.duration,
+        preferences: dto.preferences,
+      });
+
+      return {
+        success: true,
+        equipment,
+        message: '装备内容生成成功',
+      };
+    } catch (error) {
+      console.error('装备内容生成失败:', error);
+      
+      // 返回默认装备内容
+      const defaultEquipment = {
+        cuisineGem: {
+          types: ['当地特色菜', '小吃', '饮品'],
+          name: '美食宝珠',
+          description: '探索当地美食文化'
+        },
+        attractionShield: {
+          preferences: ['热门景点', '文化古迹', '自然风光'],
+          name: '景点盾牌',
+          description: '发现精彩目的地'
+        }
+      };
+
+      return {
+        success: true,
+        equipment: defaultEquipment,
+        message: '使用默认装备内容',
+      };
+    }
+  }
+
   @ApiOperation({ summary: '生成冲突预测题目' })
   @ApiResponse({ status: 200, description: '冲突题目生成成功' })
   @ApiResponse({ status: 400, description: 'API请求失败' })

@@ -121,6 +121,43 @@ let AiController = class AiController {
             return res.status(500).json({ error: '图片代理失败' });
         }
     }
+    async generateEquipmentContent(dto) {
+        try {
+            const equipment = await this.kimiService.generateEquipmentContent({
+                title: dto.title,
+                description: dto.description,
+                scenarioType: dto.scenarioType,
+                budget: dto.budget,
+                duration: dto.duration,
+                preferences: dto.preferences,
+            });
+            return {
+                success: true,
+                equipment,
+                message: '装备内容生成成功',
+            };
+        }
+        catch (error) {
+            console.error('装备内容生成失败:', error);
+            const defaultEquipment = {
+                cuisineGem: {
+                    types: ['当地特色菜', '小吃', '饮品'],
+                    name: '美食宝珠',
+                    description: '探索当地美食文化'
+                },
+                attractionShield: {
+                    preferences: ['热门景点', '文化古迹', '自然风光'],
+                    name: '景点盾牌',
+                    description: '发现精彩目的地'
+                }
+            };
+            return {
+                success: true,
+                equipment: defaultEquipment,
+                message: '使用默认装备内容',
+            };
+        }
+    }
     async generateConflictQuestions(dto) {
         try {
             const questions = await this.kimiService.generateConflictQuestions({
@@ -246,6 +283,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "proxyImage", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: '生成装备内容' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '装备内容生成成功' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'API请求失败' }),
+    (0, common_1.Post)('kimi/generate-equipment'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AiController.prototype, "generateEquipmentContent", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: '生成冲突预测题目' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '冲突题目生成成功' }),
