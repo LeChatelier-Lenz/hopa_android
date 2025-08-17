@@ -17,6 +17,10 @@ import {
   Divider,
   Switch,
   FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   NavigateBefore,
@@ -122,12 +126,83 @@ interface CharacterCreatorProps {
   initialConfig?: CharacterConfig;
 }
 
+// 装备槽位组件
+interface EquipmentSlotProps {
+  icon: React.ReactNode;
+  name: string;
+  enabled: boolean;
+  onClick: () => void;
+  color: string;
+}
+
+const EquipmentSlot: React.FC<EquipmentSlotProps> = ({ icon, name, enabled, onClick, color }) => (
+  <Box
+    onClick={onClick}
+    sx={{
+      width: 70,
+      height: 70,
+      border: `2px solid ${enabled ? color : '#ccc'}`,
+      borderRadius: 2,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: enabled ? `${color}15` : 'rgba(0,0,0,0.02)',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      '&:hover': {
+        transform: 'scale(1.05)',
+        boxShadow: `0 4px 12px ${color}40`,
+        bgcolor: enabled ? `${color}25` : 'rgba(0,0,0,0.05)',
+      },
+    }}
+  >
+         <Box sx={{ 
+       color: enabled ? color : '#999',
+       fontSize: '1.5rem',
+       mb: 0.3
+     }}>
+       {icon}
+     </Box>
+     <Typography variant="caption" sx={{ 
+       color: enabled ? color : '#999',
+       fontWeight: enabled ? 600 : 400,
+       textAlign: 'center',
+       fontSize: '0.6rem',
+       lineHeight: 1
+     }}>
+       {name}
+     </Typography>
+    {enabled && (
+      <Box sx={{
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        width: 20,
+        height: 20,
+        borderRadius: '50%',
+        bgcolor: color,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: '0.7rem',
+        fontWeight: 'bold'
+      }}>
+        ✓
+      </Box>
+    )}
+  </Box>
+);
+
 const CharacterCreator: React.FC<CharacterCreatorProps> = ({ 
   onCharacterCreated, 
   onBack,
   initialConfig 
 }) => {
   const [selectedCharacterIndex, setSelectedCharacterIndex] = useState(0);
+  const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [config, setConfig] = useState<CharacterConfig>(() => {
     // 优先使用传入的配置，其次是localStorage，最后是默认配置
     if (initialConfig) return initialConfig;
@@ -306,259 +381,109 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
         </Box>
       </Paper>
 
-      {/* 装备选择区域 */}
+      {/* 装备背包区域 */}
       <Typography variant="h5" gutterBottom sx={{ 
         fontWeight: 600, 
         color: '#333',
         mb: 3,
         textAlign: 'center'
       }}>
-        🎒 西湖约会装备
+        🎒 西湖约会装备背包
       </Typography>
 
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-        gap: 3 
+      {/* 背包网格 */}
+      <Paper elevation={3} sx={{ 
+        p: 3, 
+        mb: 4, 
+        borderRadius: 3,
+        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+        border: '2px solid #dee2e6'
       }}>
-        {/* 预算护符 */}
-        <Box>
-          <Card sx={{ height: '100%', borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <AttachMoney sx={{ color: '#ff5a5e' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  预算护符
-                </Typography>
-                <Switch
-                  checked={config.equipment.budgetAmulet.enabled}
-                  onChange={(e) => updateEquipment('budgetAmulet', { enabled: e.target.checked })}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#ff5a5e',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#ff5a5e',
-                    },
-                  }}
-                />
-              </Box>
-              
-              {config.equipment.budgetAmulet.enabled && (
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    设定你的消费预算范围
-                  </Typography>
-                  <Box sx={{ px: 2, py: 3 }}>
-                    <Slider
-                      value={config.equipment.budgetAmulet.range}
-                      onChange={(_, newValue) => 
-                        updateEquipment('budgetAmulet', { range: newValue })
-                      }
-                      valueLabelDisplay="on"
-                      min={50}
-                      max={1000}
-                      step={50}
-                      marks={[
-                        { value: 50, label: '¥50' },
-                        { value: 500, label: '¥500' },
-                        { value: 1000, label: '¥1000' },
-                      ]}
-                      sx={{
-                        '& .MuiSlider-thumb': {
-                          backgroundColor: '#ff5a5e',
-                        },
-                        '& .MuiSlider-track': {
-                          backgroundColor: '#ff5a5e',
-                        },
-                        '& .MuiSlider-rail': {
-                          backgroundColor: '#ffcdd2',
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="body2" align="center" sx={{ 
-                    color: '#ff5a5e', 
-                    fontWeight: 500 
-                  }}>
-                    预算范围：¥{config.equipment.budgetAmulet.range[0]} - ¥{config.equipment.budgetAmulet.range[1]}
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+        <Typography variant="h6" gutterBottom sx={{ 
+          color: '#ff5a5e', 
+          fontWeight: 600,
+          mb: 2,
+          textAlign: 'center'
+        }}>
+          装备栏
+        </Typography>
+        
+                 <Box sx={{ 
+           display: 'grid', 
+           gridTemplateColumns: 'repeat(4, 1fr)',
+           gap: 2,
+           maxWidth: 400,
+           mx: 'auto',
+           justifyItems: 'center'
+         }}>
+          {/* 预算护符 */}
+          <EquipmentSlot
+            icon={<AttachMoney />}
+            name="预算护符"
+            enabled={config.equipment.budgetAmulet.enabled}
+            onClick={() => setSelectedEquipment('budgetAmulet')}
+            color="#FFD700"
+          />
+          
+          {/* 时间指南针 */}
+          <EquipmentSlot
+            icon={<Schedule />}
+            name="时间指南针"
+            enabled={config.equipment.timeCompass.enabled}
+            onClick={() => setSelectedEquipment('timeCompass')}
+            color="#4CAF50"
+          />
+          
+          {/* 景点盾牌 */}
+          <EquipmentSlot
+            icon={<LocationOn />}
+            name="景点盾牌"
+            enabled={config.equipment.attractionShield.enabled}
+            onClick={() => setSelectedEquipment('attractionShield')}
+            color="#2196F3"
+          />
+          
+          {/* 美食宝珠 */}
+          <EquipmentSlot
+            icon={<Restaurant />}
+            name="美食宝珠"
+            enabled={config.equipment.cuisineGem.enabled}
+            onClick={() => setSelectedEquipment('cuisineGem')}
+            color="#FF5722"
+          />
+          
+                     {/* 空位 */}
+           {[4, 5, 6, 7].map((index) => (
+             <Box
+               key={index}
+               sx={{
+                 width: 70,
+                 height: 70,
+                 border: '2px dashed #ccc',
+                 borderRadius: 2,
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 bgcolor: 'rgba(0,0,0,0.02)',
+                 color: '#999',
+                 fontSize: '0.7rem',
+                 cursor: 'default'
+               }}
+             >
+               空位
+             </Box>
+           ))}
         </Box>
-
-        {/* 时间指南针 */}
-        <Box>
-          <Card sx={{ height: '100%', borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Schedule sx={{ color: '#ff5a5e' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  时间指南针
-                </Typography>
-                <Switch
-                  checked={config.equipment.timeCompass.enabled}
-                  onChange={(e) => updateEquipment('timeCompass', { enabled: e.target.checked })}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#ff5a5e',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#ff5a5e',
-                    },
-                  }}
-                />
-              </Box>
-              
-              {config.equipment.timeCompass.enabled && (
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    选择游玩时长偏好
-                  </Typography>
-                  <FormControl fullWidth sx={{ mt: 2 }}>
-                    <InputLabel>时长偏好</InputLabel>
-                    <Select
-                      value={config.equipment.timeCompass.duration}
-                      label="时长偏好"
-                      onChange={(e) => 
-                        updateEquipment('timeCompass', { duration: e.target.value })
-                      }
-                    >
-                      <MenuItem value="half-day">半日游 (4-6小时)</MenuItem>
-                      <MenuItem value="full-day">全日游 (8-10小时)</MenuItem>
-                      <MenuItem value="overnight">过夜游 (1-2天)</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* 景点盾牌 */}
-        <Box>
-          <Card sx={{ height: '100%', borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <LocationOn sx={{ color: '#ff5a5e' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  景点盾牌
-                </Typography>
-                <Switch
-                  checked={config.equipment.attractionShield.enabled}
-                  onChange={(e) => updateEquipment('attractionShield', { enabled: e.target.checked })}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#ff5a5e',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#ff5a5e',
-                    },
-                  }}
-                />
-              </Box>
-              
-              {config.equipment.attractionShield.enabled && (
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    选择想去的景点（可多选）
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                    {attractionOptions.map((attraction) => (
-                      <Chip
-                        key={attraction}
-                        label={attraction}
-                        clickable
-                        variant={config.equipment.attractionShield.preferences.includes(attraction) ? 'filled' : 'outlined'}
-                        onClick={() => {
-                          const current = config.equipment.attractionShield.preferences;
-                          const newPreferences = current.includes(attraction)
-                            ? current.filter(p => p !== attraction)
-                            : [...current, attraction];
-                          updateEquipment('attractionShield', { preferences: newPreferences });
-                        }}
-                        sx={{
-                          backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) ? '#ff5a5e' : 'transparent',
-                          color: config.equipment.attractionShield.preferences.includes(attraction) ? 'white' : '#ff5a5e',
-                          borderColor: '#ff5a5e',
-                          '&:hover': {
-                            backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) 
-                              ? '#ff4a4e' 
-                              : 'rgba(255, 90, 94, 0.04)',
-                          },
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* 美食宝珠 */}
-        <Box>
-          <Card sx={{ height: '100%', borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Restaurant sx={{ color: '#ff5a5e' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  美食宝珠
-                </Typography>
-                <Switch
-                  checked={config.equipment.cuisineGem.enabled}
-                  onChange={(e) => updateEquipment('cuisineGem', { enabled: e.target.checked })}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#ff5a5e',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#ff5a5e',
-                    },
-                  }}
-                />
-              </Box>
-              
-              {config.equipment.cuisineGem.enabled && (
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    选择餐饮偏好（可多选）
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                    {cuisineOptions.map((cuisine) => (
-                      <Chip
-                        key={cuisine}
-                        label={cuisine}
-                        clickable
-                        variant={config.equipment.cuisineGem.types.includes(cuisine) ? 'filled' : 'outlined'}
-                        onClick={() => {
-                          const current = config.equipment.cuisineGem.types;
-                          const newTypes = current.includes(cuisine)
-                            ? current.filter(t => t !== cuisine)
-                            : [...current, cuisine];
-                          updateEquipment('cuisineGem', { types: newTypes });
-                        }}
-                        sx={{
-                          backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) ? '#ff5a5e' : 'transparent',
-                          color: config.equipment.cuisineGem.types.includes(cuisine) ? 'white' : '#ff5a5e',
-                          borderColor: '#ff5a5e',
-                          '&:hover': {
-                            backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) 
-                              ? '#ff4a4e' 
-                              : 'rgba(255, 90, 94, 0.04)',
-                          },
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
+        
+        <Typography variant="body2" sx={{ 
+          mt: 2, 
+          textAlign: 'center', 
+          color: '#666',
+          fontStyle: 'italic'
+        }}>
+          💡 点击装备图标查看和调整详细设置
+        </Typography>
+      </Paper>
 
       {/* 操作按钮 */}
       <Box sx={{ 
@@ -670,6 +595,260 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           )}
         </Box>
       </Paper>
+
+      {/* 装备详情对话框 */}
+      <Dialog 
+        open={!!selectedEquipment} 
+        onClose={() => setSelectedEquipment(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          bgcolor: '#ff5a5e', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          {selectedEquipment === 'budgetAmulet' && <AttachMoney />}
+          {selectedEquipment === 'timeCompass' && <Schedule />}
+          {selectedEquipment === 'attractionShield' && <LocationOn />}
+          {selectedEquipment === 'cuisineGem' && <Restaurant />}
+          {selectedEquipment === 'budgetAmulet' && '预算护符'}
+          {selectedEquipment === 'timeCompass' && '时间指南针'}
+          {selectedEquipment === 'attractionShield' && '景点盾牌'}
+          {selectedEquipment === 'cuisineGem' && '美食宝珠'}
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedEquipment === 'budgetAmulet' && (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">预算护符设置</Typography>
+                <Switch
+                  checked={config.equipment.budgetAmulet.enabled}
+                  onChange={(e) => updateEquipment('budgetAmulet', { enabled: e.target.checked })}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#ff5a5e',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#ff5a5e',
+                    },
+                  }}
+                />
+              </Box>
+              
+              {config.equipment.budgetAmulet.enabled && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    设定你的消费预算范围
+                  </Typography>
+                  <Box sx={{ px: 2, py: 3 }}>
+                    <Slider
+                      value={config.equipment.budgetAmulet.range}
+                      onChange={(_, newValue) => 
+                        updateEquipment('budgetAmulet', { range: newValue })
+                      }
+                      valueLabelDisplay="on"
+                      min={50}
+                      max={1000}
+                      step={50}
+                      marks={[
+                        { value: 50, label: '¥50' },
+                        { value: 500, label: '¥500' },
+                        { value: 1000, label: '¥1000' },
+                      ]}
+                      sx={{
+                        '& .MuiSlider-thumb': {
+                          backgroundColor: '#ff5a5e',
+                        },
+                        '& .MuiSlider-track': {
+                          backgroundColor: '#ff5a5e',
+                        },
+                        '& .MuiSlider-rail': {
+                          backgroundColor: '#ffcdd2',
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="body2" align="center" sx={{ 
+                    color: '#ff5a5e', 
+                    fontWeight: 500 
+                  }}>
+                    预算范围：¥{config.equipment.budgetAmulet.range[0]} - ¥{config.equipment.budgetAmulet.range[1]}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {selectedEquipment === 'timeCompass' && (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">时间指南针设置</Typography>
+                <Switch
+                  checked={config.equipment.timeCompass.enabled}
+                  onChange={(e) => updateEquipment('timeCompass', { enabled: e.target.checked })}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#ff5a5e',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#ff5a5e',
+                    },
+                  }}
+                />
+              </Box>
+              
+              {config.equipment.timeCompass.enabled && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    选择游玩时长偏好
+                  </Typography>
+                  <FormControl fullWidth sx={{ mt: 2 }}>
+                    <InputLabel>时长偏好</InputLabel>
+                    <Select
+                      value={config.equipment.timeCompass.duration}
+                      label="时长偏好"
+                      onChange={(e) => 
+                        updateEquipment('timeCompass', { duration: e.target.value })
+                      }
+                    >
+                      <MenuItem value="half-day">半日游 (4-6小时)</MenuItem>
+                      <MenuItem value="full-day">全日游 (8-10小时)</MenuItem>
+                      <MenuItem value="overnight">过夜游 (1-2天)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {selectedEquipment === 'attractionShield' && (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">景点盾牌设置</Typography>
+                <Switch
+                  checked={config.equipment.attractionShield.enabled}
+                  onChange={(e) => updateEquipment('attractionShield', { enabled: e.target.checked })}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#ff5a5e',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#ff5a5e',
+                    },
+                  }}
+                />
+              </Box>
+              
+              {config.equipment.attractionShield.enabled && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    选择想去的景点（可多选）
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                    {attractionOptions.map((attraction) => (
+                      <Chip
+                        key={attraction}
+                        label={attraction}
+                        clickable
+                        variant={config.equipment.attractionShield.preferences.includes(attraction) ? 'filled' : 'outlined'}
+                        onClick={() => {
+                          const current = config.equipment.attractionShield.preferences;
+                          const newPreferences = current.includes(attraction)
+                            ? current.filter(p => p !== attraction)
+                            : [...current, attraction];
+                          updateEquipment('attractionShield', { preferences: newPreferences });
+                        }}
+                        sx={{
+                          backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) ? '#ff5a5e' : 'transparent',
+                          color: config.equipment.attractionShield.preferences.includes(attraction) ? 'white' : '#ff5a5e',
+                          borderColor: '#ff5a5e',
+                          '&:hover': {
+                            backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) 
+                              ? '#ff4a4e' 
+                              : 'rgba(255, 90, 94, 0.04)',
+                          },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {selectedEquipment === 'cuisineGem' && (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">美食宝珠设置</Typography>
+                <Switch
+                  checked={config.equipment.cuisineGem.enabled}
+                  onChange={(e) => updateEquipment('cuisineGem', { enabled: e.target.checked })}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#ff5a5e',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#ff5a5e',
+                    },
+                  }}
+                />
+              </Box>
+              
+              {config.equipment.cuisineGem.enabled && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    选择餐饮偏好（可多选）
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                    {cuisineOptions.map((cuisine) => (
+                      <Chip
+                        key={cuisine}
+                        label={cuisine}
+                        clickable
+                        variant={config.equipment.cuisineGem.types.includes(cuisine) ? 'filled' : 'outlined'}
+                        onClick={() => {
+                          const current = config.equipment.cuisineGem.types;
+                          const newTypes = current.includes(cuisine)
+                            ? current.filter(t => t !== cuisine)
+                            : [...current, cuisine];
+                          updateEquipment('cuisineGem', { types: newTypes });
+                        }}
+                        sx={{
+                          backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) ? '#ff5a5e' : 'transparent',
+                          color: config.equipment.cuisineGem.types.includes(cuisine) ? 'white' : '#ff5a5e',
+                          borderColor: '#ff5a5e',
+                          '&:hover': {
+                            backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) 
+                              ? '#ff4a4e' 
+                              : 'rgba(255, 90, 94, 0.04)',
+                          },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setSelectedEquipment(null)}
+            variant="contained"
+            sx={{
+              bgcolor: '#ff5a5e',
+              '&:hover': { bgcolor: '#ff4a4e' }
+            }}
+          >
+            确定
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -502,6 +502,8 @@ export class BattleScene extends Phaser.Scene {
     
     if (this.questionType === 'sort') {
       this.displaySortQuestion(options);
+    } else if (this.questionType === 'fill') {
+      this.displayFillQuestion();
     } else {
       this.displayChoiceQuestion(options);
     }
@@ -525,6 +527,149 @@ export class BattleScene extends Phaser.Scene {
       this.optionButtons[i].setVisible(false);
       this.optionTexts[i].setText('');
     }
+  }
+
+  private displayFillQuestion() {
+    // 填空题显示
+    console.log('📝 显示填空题');
+    
+    // 隐藏所有选项按钮
+    this.optionButtons.forEach((button, index) => {
+      button.setVisible(false);
+      if (this.optionTexts[index]) {
+        this.optionTexts[index].setText('');
+      }
+    });
+    
+    // 创建填空题输入区域
+    const inputY = this.scale.height * 0.6;
+    const inputWidth = this.scale.width * 0.7;
+    const inputHeight = this.scale.height * 0.08;
+    
+    // 输入框背景
+    const inputBg = this.add.rectangle(
+      this.scale.width / 2, 
+      inputY, 
+      inputWidth, 
+      inputHeight, 
+      0xffffff, 
+      0.9
+    );
+    inputBg.setStrokeStyle(2, 0x2196F3);
+    
+    // 创建DOM输入框
+    const inputElement = document.createElement('input');
+    inputElement.type = 'text';
+    inputElement.placeholder = '请输入您的答案...';
+    inputElement.style.cssText = `
+      position: absolute;
+      left: ${(this.scale.width - inputWidth) / 2}px;
+      top: ${inputY - inputHeight / 2}px;
+      width: ${inputWidth - 20}px;
+      height: ${inputHeight - 10}px;
+      border: none;
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 16px;
+      background: transparent;
+      color: #333;
+      outline: none;
+      z-index: 1000;
+    `;
+    
+    // 添加输入框到游戏容器
+    const gameContainer = this.game.canvas.parentElement;
+    if (gameContainer) {
+      gameContainer.appendChild(inputElement);
+    } else {
+      // 备用方案：添加到body
+      document.body.appendChild(inputElement);
+    }
+    
+    // 添加回车键提交功能
+    inputElement.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        const answer = inputElement.value.trim();
+        if (answer) {
+          this.handleFillAnswer(answer);
+          // 清理DOM元素
+          const gameContainer = this.game.canvas.parentElement;
+          if (gameContainer && gameContainer.contains(inputElement)) {
+            gameContainer.removeChild(inputElement);
+          } else if (document.body.contains(inputElement)) {
+            document.body.removeChild(inputElement);
+          }
+          inputBg.destroy();
+          submitButton.destroy();
+          submitText.destroy();
+        } else {
+          // 显示错误提示
+          this.showFeedback('请输入答案后再提交');
+        }
+      }
+    });
+    
+    // 自动聚焦输入框
+    setTimeout(() => {
+      inputElement.focus();
+    }, 100);
+    
+    // 提交按钮
+    const submitButton = this.add.rectangle(
+      this.scale.width / 2,
+      inputY + inputHeight + 20,
+      inputWidth * 0.3,
+      inputHeight * 0.8,
+      0x4CAF50,
+      0.9
+    );
+    submitButton.setStrokeStyle(2, 0x2E7D32);
+    submitButton.setInteractive();
+    
+    const submitText = this.add.text(
+      this.scale.width / 2,
+      inputY + inputHeight + 20,
+      '提交答案',
+      {
+        fontSize: '16px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+      }
+    ).setOrigin(0.5);
+    
+    // 提交按钮事件
+    submitButton.on('pointerdown', () => {
+      const answer = inputElement.value.trim();
+      if (answer) {
+        this.handleFillAnswer(answer);
+        // 清理DOM元素
+        const gameContainer = this.game.canvas.parentElement;
+        if (gameContainer && gameContainer.contains(inputElement)) {
+          gameContainer.removeChild(inputElement);
+        } else if (document.body.contains(inputElement)) {
+          document.body.removeChild(inputElement);
+        }
+        inputBg.destroy();
+        submitButton.destroy();
+        submitText.destroy();
+      } else {
+        // 显示错误提示
+        this.showFeedback('请输入答案后再提交');
+      }
+    });
+    
+    submitButton.on('pointerover', () => {
+      submitButton.setFillStyle(0x66BB6A);
+      submitButton.setScale(1.02);
+    });
+    
+    submitButton.on('pointerout', () => {
+      submitButton.setFillStyle(0x4CAF50);
+      submitButton.setScale(1.0);
+    });
+    
+    // 添加填空题说明
+    this.questionText?.setText(this.questionText.text + '\n\n💡 填空题：请在下方输入框中输入您的答案');
   }
 
   private displaySortQuestion(options: string[]) {
@@ -723,11 +868,48 @@ export class BattleScene extends Phaser.Scene {
     return Math.max(0.3, similarity); // 最低0.3分
   }
 
+  private calculateFillSimilarity(answer1: string, answer2: string): number {
+    // 填空题相似度计算
+    const text1 = answer1.toLowerCase().trim();
+    const text2 = answer2.toLowerCase().trim();
+    
+    // 完全一致
+    if (text1 === text2) return 1.0;
+    
+    // 包含关系
+    if (text1.includes(text2) || text2.includes(text1)) return 0.8;
+    
+    // 计算公共字符
+    const chars1 = text1.split('');
+    const chars2 = text2.split('');
+    const commonChars = chars1.filter(char => chars2.includes(char));
+    
+    if (commonChars.length === 0) return 0.2; // 最低分
+    
+    // 计算字符相似度
+    const charSimilarity = commonChars.length / Math.max(chars1.length, chars2.length);
+    
+    // 计算长度相似度
+    const lengthSimilarity = 1 - Math.abs(chars1.length - chars2.length) / Math.max(chars1.length, chars2.length);
+    
+    // 综合评分
+    const similarity = Math.min(0.9, charSimilarity * 0.6 + lengthSimilarity * 0.4);
+    
+    console.log('📝 填空题相似度计算:', {
+      text1, text2,
+      charSimilarity,
+      lengthSimilarity,
+      similarity
+    });
+    
+    return similarity;
+  }
+
   private handleAnswerClick(optionIndex: number) {
     if (!this.currentQuestion || this.battlePhase !== 'question') return;
     
-    // 排序题已经有专门的处理方法
-    if (this.questionType === 'sort') return;
+    // 排序题和填空题已经有专门的处理方法
+    if (this.questionType === 'sort' || this.questionType === 'fill') return;
     
     const options = this.currentQuestion.options || [];
     const selectedOption = options[optionIndex];
@@ -750,6 +932,36 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private handleFillAnswer(answer: string) {
+    if (!this.currentQuestion || this.battlePhase !== 'question') return;
+    
+    console.log('📝 填空题答案:', answer);
+    
+    // 模拟双人答案 (实际应该来自外部输入)
+    if (!this.player1Answer) {
+      this.player1Answer = answer;
+      this.showFeedback(`玩家1回答: ${answer}`);
+      
+      // 模拟玩家2自动回答 (2秒后)
+      setTimeout(() => {
+        if (!this.player2Answer && this.currentQuestion) {
+          // 生成一个相似的答案
+          const similarAnswers = [
+            answer + '（类似）',
+            answer + '吧',
+            '我觉得' + answer,
+            answer + '比较合适',
+            answer + '应该可以'
+          ];
+          const randomAnswer = similarAnswers[Math.floor(Math.random() * similarAnswers.length)];
+          this.player2Answer = randomAnswer;
+          this.showFeedback(`玩家2回答: ${this.player2Answer}`);
+          this.processAnswers();
+        }
+      }, 2000);
+    }
+  }
+
   private processAnswers() {
     if (!this.player1Answer || !this.player2Answer || !this.currentQuestion) return;
     
@@ -759,6 +971,9 @@ export class BattleScene extends Phaser.Scene {
     if (this.questionType === 'sort') {
       // 排序题：计算排序相似度
       consistency = this.calculateSortSimilarity(this.player1Answer, this.player2Answer);
+    } else if (this.questionType === 'fill') {
+      // 填空题：计算文本相似度
+      consistency = this.calculateFillSimilarity(this.player1Answer, this.player2Answer);
     } else {
       // 选择题：完全一致或部分一致
       consistency = this.player1Answer === this.player2Answer ? 1.0 : 0.5;
