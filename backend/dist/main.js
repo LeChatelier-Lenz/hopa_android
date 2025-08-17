@@ -11,10 +11,18 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         transform: true,
     }));
+    const hostIP = process.env.HOST_IP || '10.162.149.24';
     app.enableCors({
         origin: [
             'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:8100',
             'http://localhost:3000',
+            `http://${hostIP}:5173`,
+            `http://${hostIP}:5174`,
+            `http://${hostIP}:8100`,
+            'capacitor://localhost',
+            'ionic://localhost',
             'https://your-frontend-domain.com',
         ],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -37,7 +45,7 @@ async function bootstrap() {
             persistAuthorization: true,
         },
     });
-    const port = process.env.PORT ?? 3000;
+    const port = process.env.PORT ?? 3001;
     await app.listen(port);
     console.log(`🚀 后端服务启动成功！`);
     console.log(`📖 API文档地址: http://localhost:${port}/api-docs`);

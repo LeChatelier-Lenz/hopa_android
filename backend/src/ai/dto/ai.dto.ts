@@ -48,6 +48,11 @@ export class GenerateGameBackgroundDto {
   @IsOptional()
   @IsString()
   theme?: string;
+
+  @ApiPropertyOptional({ description: '参与人数', example: 5 })
+  @IsOptional()
+  @IsNumber()
+  peopleCount?: number;
 }
 
 export class ChatDto {

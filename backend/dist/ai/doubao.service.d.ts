@@ -14,5 +14,6 @@ export declare class DoubaoService {
         title: string;
         description: string;
         theme?: string;
+        peopleCount?: number;
     }): Promise<string>;
 }

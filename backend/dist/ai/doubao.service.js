@@ -71,29 +71,27 @@ let DoubaoService = class DoubaoService {
         }
     }
     async generateGameBackground(scenario) {
+        const getPeopleDescription = (count) => {
+            if (!count)
+                return '';
+            if (count === 1)
+                return '1人独自进行';
+            if (count === 2)
+                return '2人配合';
+            if (count <= 4)
+                return `${count}人小团体`;
+            if (count <= 8)
+                return `${count}人团队`;
+            return `${count}人大团队`;
+        };
+        const peopleDescription = getPeopleDescription(scenario.peopleCount);
         const basePrompt = `
-创建一个适合共识游戏的背景图，垂直构图(9:16比例)，适合手机游戏界面。
+主题: ${scenario.title}
+场景: ${scenario.description}
+${peopleDescription ? `人数特色: ${peopleDescription}` : ''}
+${scenario.theme ? `风格: ${scenario.theme}` : ''}
 
-共识主题: ${scenario.title}
-场景描述: ${scenario.description}
-${scenario.theme ? `主题风格: ${scenario.theme}` : ''}
-
-视觉要求:
-- 温馨友好，色彩柔和
-- 自然光照
-- 适合活动的场景
-- 画面构图适合竖屏显示，上部留白区域用于放置游戏UI
-- 中部和下部为主要视觉内容
-- 不要出现具体的人物或文字
-
-技术规格:
-- 尺寸: 1080x1920像素 (9:16比例)
-- 风格: 插画风格或水彩画风格
-- 分辨率: 高清
-- 色彩: 色彩丰富但不过于饱和
-- 构图: 层次分明，适合游戏界面叠加
-
-艺术风格: 现代插画，温馨治愈系，适合移动端游戏
+请生成一个包含该主题特色的场景插画，垂直构图(9:16比例)，现代插画风格。
 `.trim();
         return await this.generateImage(basePrompt, {
             size: '1080x1920',

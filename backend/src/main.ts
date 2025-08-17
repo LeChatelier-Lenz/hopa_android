@@ -13,11 +13,20 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // CORS配置
+  // CORS配置 - 支持动态主机IP
+  const hostIP = process.env.HOST_IP || '10.162.149.24';
+  
   app.enableCors({
     origin: [
       'http://localhost:5173', // Vite开发服务器
+      'http://localhost:5174', // Vite另一个端口
+      'http://localhost:8100', // Ionic开发服务器
       'http://localhost:3000', // 其他本地开发端口
+      `http://${hostIP}:5173`,  // 主机IP + Vite端口
+      `http://${hostIP}:5174`,  // 主机IP + Vite另一端口
+      `http://${hostIP}:8100`,  // 主机IP + Ionic端口
+      'capacitor://localhost', // Capacitor应用
+      'ionic://localhost', // Ionic应用
       'https://your-frontend-domain.com', // 生产环境域名
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -44,7 +53,7 @@ async function bootstrap() {
     },
   });
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 3001;
   await app.listen(port);
   
   console.log(`🚀 后端服务启动成功！`);

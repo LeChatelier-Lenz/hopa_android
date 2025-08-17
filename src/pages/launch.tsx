@@ -152,6 +152,7 @@ const LaunchPage: React.FC = () => {
       const backgroundUrl = await doubaoApi.generateGameBackground({
         title: consensusGoal.title,
         description: consensusGoal.description,
+        peopleCount: consensusGoal.maxParticipants, // 直接使用用户填写的人数
       });
       
       setGameBackground(backgroundUrl);

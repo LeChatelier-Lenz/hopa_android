@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { kimiApi } from '../../../utils/kimiApi';
+import { apiConfig } from '../../../config/api';
 
 interface GameData {
   player1Config: any;
@@ -53,8 +54,9 @@ export class LoadingScene extends Phaser.Scene {
     // 加载AI生成的背景图（如果有）- 通过后端代理解决CORS问题
     if (this.gameData?.backgroundUrl) {
       console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
-      // 使用后端代理URL
-      const proxyUrl = `http://localhost:3001/ai/proxy/image?url=${encodeURIComponent(this.gameData.backgroundUrl)}`;
+      // 使用动态后端代理URL
+      const proxyUrl = apiConfig.buildImageProxyUrl(this.gameData.backgroundUrl);
+      console.log('🔧 使用代理URL:', proxyUrl);
       this.load.image('ai_background', proxyUrl);
     }
   }

@@ -1,4 +1,5 @@
 // Kimi K2 大模型 API 接口
+import { apiConfig } from '../config/api';
 
 interface KimiMessage {
   role: 'system' | 'user' | 'assistant';
@@ -32,7 +33,8 @@ export class KimiAPI {
 
   constructor() {
     // 调用后端API，不再需要API密钥
-    this.backendUrl = 'http://localhost:3001/ai';
+    this.backendUrl = apiConfig.getBackendUrl();
+    console.log('🔧 KimiAPI初始化，后端URL:', this.backendUrl);
   }
 
   async chat(messages: KimiMessage[], options?: {

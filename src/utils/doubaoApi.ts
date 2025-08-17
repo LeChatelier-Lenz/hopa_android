@@ -1,4 +1,5 @@
 // Doubao 文生图模型 API 接口
+import { apiConfig } from '../config/api';
 
 interface DoubaoRequest {
   model: string;
@@ -24,7 +25,8 @@ export class DoubaoAPI {
 
   constructor() {
     // 调用后端API，不再需要API密钥
-    this.backendUrl = 'http://localhost:3001/ai';
+    this.backendUrl = apiConfig.getBackendUrl();
+    console.log('🔧 DoubaoAPI初始化，后端URL:', this.backendUrl);
   }
 
   async generateImage(prompt: string, options?: {
@@ -107,11 +109,13 @@ export class DoubaoAPI {
     title: string;
     description: string;
     theme?: string;
+    peopleCount?: number;
   }): Promise<string> {
     const requestBody = {
       title: scenario.title,
       description: scenario.description,
       theme: scenario.theme,
+      peopleCount: scenario.peopleCount,
     };
 
     try {

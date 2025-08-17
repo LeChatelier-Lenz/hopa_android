@@ -8,6 +8,7 @@ export interface BackgroundPromptParams {
   mood?: 'romantic' | 'adventure' | 'peaceful' | 'exciting' | 'cozy' | 'energetic' | 'relaxed';
   timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
   location?: 'indoor' | 'outdoor' | 'urban' | 'nature' | 'travel';
+  peopleCount?: number; // 人数
 }
 
 export class BackgroundPrompts {
@@ -47,45 +48,49 @@ export class BackgroundPrompts {
       travel: '旅行场景，异地风光'
     };
 
-    const scenarioType = params.scenarioType ? scenarioTypeMap[params.scenarioType] : '通用共识达成游戏';
-    const mood = params.mood ? moodMap[params.mood] : '温馨友好，色彩柔和';
-    const time = params.timeOfDay ? timeMap[params.timeOfDay] : '自然光照';
-    const location = params.location ? locationMap[params.location] : '适合活动的场景';
+    // 人数检测
+    const peopleCount = params.peopleCount || this.extractPeopleCount(params.title, params.description);
+    const peopleDescription = this.getPeopleDescription(peopleCount, params.scenarioType);
 
     return `
-创建一个完整的游戏背景画面，垂直构图(9:16比例)，纯风景图。
-
 主题: ${params.title}
 场景: ${params.description}
-${params.theme ? `风格: ${params.theme}` : ''}
+${peopleDescription ? `人数特色: ${peopleDescription}` : ''}
 
-视觉风格:
-- ${mood}
-- ${time}
-- ${location}
-- 纯自然风景或室内场景背景
-- 完整填满整个画布，无空白边界
-- 无任何电子设备痕迹
-
-严格禁止包含:
-- 手机外框、手机边框、设备边框
-- 任何UI界面元素、按钮、图标
-- 应用程序界面、屏幕界面
-- 电子设备、手机、平板、电脑
-- 文字、字母、数字、标志
-- 人物角色、卡通形象
-- 游戏界面元素
-
-画面要求:
-- 尺寸: 1080x1920像素 (竖屏比例)
-- 风格: 现代插画风格或清新水彩画风格  
-- 分辨率: 高清画质
-- 色彩: 色彩和谐，不过于饱和
-- 构图: 层次丰富的完整背景画面
-- 内容: 仅包含风景、建筑、自然元素等环境背景
-
-关键要求: 这是游戏背景图，必须是完整的风景画面，绝对不能包含任何手机框架、设备边框或UI元素！
+请生成一个包含该主题特色的场景插画，垂直构图(9:16比例)，现代插画风格。
 `.trim();
+  }
+
+  // 人数检测
+  static extractPeopleCount(title: string, description: string): number {
+    const text = (title + ' ' + description).toLowerCase();
+    
+    // 数字检测
+    const numberMatch = text.match(/(\d+)\s*[个人名]/);
+    if (numberMatch) {
+      return parseInt(numberMatch[1]);
+    }
+    
+    // 关键词检测
+    if (text.includes('情侣') || text.includes('两个人') || text.includes('俩人')) return 2;
+    if (text.includes('三人') || text.includes('3人')) return 3;
+    if (text.includes('四人') || text.includes('4人')) return 4;
+    if (text.includes('五人') || text.includes('5人') || text.includes('兄弟') || text.includes('闺蜜')) return 5;
+    if (text.includes('家庭') || text.includes('家人')) return 4; // 家庭默认4人
+    if (text.includes('团队') || text.includes('同事')) return 6; // 团队默认6人
+    if (text.includes('朋友') && !text.includes('好朋友')) return 3; // 朋友默认3人
+    if (text.includes('好朋友') || text.includes('哥们')) return 2; // 好朋友默认2人
+    
+    return 2; // 默认2人
+  }
+
+  // 人数描述
+  static getPeopleDescription(count: number, scenarioType?: string): string {
+    if (count === 1) return '适合个人的安静空间';
+    if (count === 2) return '适合双人的温馨空间';  
+    if (count <= 4) return '适合小组的舒适空间';
+    if (count <= 6) return '适合多人的宽敞场所';
+    return '适合大群体的开阔场景';
   }
 
   // 预设场景模板

@@ -9,6 +9,7 @@ export declare class GenerateGameBackgroundDto {
     title: string;
     description: string;
     theme?: string;
+    peopleCount?: number;
 }
 export declare class ChatDto {
     messages: Array<{

@@ -61,6 +61,7 @@ class GenerateGameBackgroundDto {
     title;
     description;
     theme;
+    peopleCount;
 }
 exports.GenerateGameBackgroundDto = GenerateGameBackgroundDto;
 __decorate([
@@ -79,6 +80,12 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], GenerateGameBackgroundDto.prototype, "theme", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: '参与人数', example: 5 }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], GenerateGameBackgroundDto.prototype, "peopleCount", void 0);
 class ChatDto {
     messages;
     temperature;

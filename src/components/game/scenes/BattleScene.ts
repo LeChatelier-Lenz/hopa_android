@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Monster } from '../entities/Monster';
 import type { MonsterConfig } from '../entities/Monster';
 import { Character } from '../entities/Character';
+import { apiConfig } from '../../../config/api';
 
 interface ConflictQuestion {
   id: string;
@@ -29,7 +30,7 @@ interface Question {
   id: string;
   text: string;
   options: string[];
-  category: 'budget' | 'time' | 'attraction' | 'cuisine';
+  category: 'budget' | 'time' | 'attraction' | 'cuisine' | 'preference' | 'communication' | 'principle' | 'general';
 }
 
 export class BattleScene extends Phaser.Scene {
@@ -39,6 +40,9 @@ export class BattleScene extends Phaser.Scene {
   private aiQuestions: ConflictQuestion[] = [];
   private currentQuestionIndex: number = 0;
   private consensusResults: any[] = [];
+  private sortedOrder: string[] = []; // 用于排序题的当前排序状态
+  private questionType: 'choice' | 'fill' | 'sort' = 'choice';
+  private selectedSortIndex: number = -1; // 当前选中的排序选项
   private player1Answer: string | null = null;
   private player2Answer: string | null = null;
   private battlePhase: 'waiting' | 'question' | 'answering' | 'result' | 'victory' = 'waiting';
@@ -74,8 +78,9 @@ export class BattleScene extends Phaser.Scene {
     if (this.gameData?.backgroundUrl) {
       console.log('🖼️ 加载AI生成的背景图:', this.gameData.backgroundUrl);
       try {
-        // 使用后端代理URL
-        const proxyUrl = `http://localhost:3001/ai/proxy/image?url=${encodeURIComponent(this.gameData.backgroundUrl)}`;
+        // 使用动态后端代理URL
+        const proxyUrl = apiConfig.buildImageProxyUrl(this.gameData.backgroundUrl);
+        console.log('🔧 使用代理URL:', proxyUrl);
         this.load.image('ai_background', proxyUrl);
         
         // 添加加载完成监听
@@ -428,51 +433,51 @@ export class BattleScene extends Phaser.Scene {
       }
     }
     
-    // 如果没有AI题目或已用完，使用备用题目
+    // 如果没有AI题目或已用完，使用通用备用题目
     const fallbackQuestions: Question[] = [
       {
         id: 'budget_1',
-        text: '你们计划在西湖边的餐厅用餐，预算应该如何安排？',
+        text: '在预算有限的情况下，你们更倾向于哪种消费方式？',
         options: [
-          '人均100元以内的快餐',
-          '人均200元的特色杭帮菜',
-          '人均400元的湖景餐厅',
-          '自带便当湖边野餐'
+          '优先保证基本需求',
+          '平均分配预算',
+          '重点投入体验项目',
+          '寻找性价比最高选择'
         ],
         category: 'budget'
       },
       {
         id: 'time_1',
-        text: '雷峰塔和苏堤都想去，但时间有限，应该如何安排？',
+        text: '时间安排产生分歧时，你们会如何协调？',
         options: [
-          '上午雷峰塔，下午苏堤',
-          '重点游览雷峰塔',
-          '重点游览苏堤',
-          '都去但时间缩短'
+          '严格按照原计划执行',
+          '灵活调整重要活动',
+          '民主投票决定',
+          '轮流安排优先级'
         ],
         category: 'time'
       },
       {
-        id: 'attraction_1',
-        text: '西湖十景中，你们最想一起体验的是？',
+        id: 'preference_1',
+        text: '当大家兴趣偏好不同时，最好的解决方案是？',
         options: [
-          '断桥残雪看雪景',
-          '雷峰夕照赏夕阳',
-          '苏堤春晓散步',
-          '三潭印月泛舟'
+          '选择大多数人喜欢的',
+          '尝试融合不同偏好',
+          '轮流满足每个人',
+          '寻找新的共同兴趣'
         ],
-        category: 'attraction'
+        category: 'preference'
       },
       {
-        id: 'cuisine_1',
-        text: '在西湖游玩时，你们更偏向哪种美食体验？',
+        id: 'communication_1',
+        text: '遇到意见分歧时，你们通常如何沟通？',
         options: [
-          '正宗杭帮菜馆',
-          '网红咖啡厅',
-          '特色小笼包',
-          '湖边茶楼品茶'
+          '开诚布公直接讨论',
+          '先冷静再慢慢商量',
+          '找第三方协调',
+          '各自妥协一点'
         ],
-        category: 'cuisine'
+        category: 'communication'
       }
     ];
 
@@ -484,18 +489,34 @@ export class BattleScene extends Phaser.Scene {
   private displayQuestion() {
     if (!this.currentQuestion) return;
     
+    // 检测题目类型
+    this.questionType = ('type' in this.currentQuestion) ? this.currentQuestion.type : 'choice';
+    console.log('📝 题目类型:', this.questionType);
+    
     // 显示问题文本 - 兼容新旧格式
     const questionText = ('question' in this.currentQuestion) ? this.currentQuestion.question : this.currentQuestion.text || '';
     this.questionText?.setText(questionText);
     
-    // 显示选项 - 兼容新旧格式  
+    // 根据题目类型显示不同的UI
     const options = this.currentQuestion.options || [];
+    
+    if (this.questionType === 'sort') {
+      this.displaySortQuestion(options);
+    } else {
+      this.displayChoiceQuestion(options);
+    }
+  }
+
+  private displayChoiceQuestion(options: string[]) {
+    // 传统选择题显示
     options.forEach((option, index) => {
       if (this.optionTexts[index]) {
         this.optionTexts[index].setText(option);
+        this.optionTexts[index].setStyle({ color: '#ffffff' }); // 重置颜色
       }
       if (this.optionButtons[index]) {
         this.optionButtons[index].setVisible(true);
+        this.optionButtons[index].setFillStyle(0x4CAF50); // 重置颜色
       }
     });
     
@@ -506,8 +527,184 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private displaySortQuestion(options: string[]) {
+    // 排序题显示
+    console.log('🔄 显示排序题，选项:', options);
+    
+    // 初始化排序状态
+    this.sortedOrder = [...options];
+    
+    // 显示排序选项
+    options.forEach((option, index) => {
+      if (this.optionTexts[index]) {
+        this.optionTexts[index].setText(`${index + 1}. ${option}`);
+        this.optionTexts[index].setStyle({ color: '#ffffff' });
+      }
+      if (this.optionButtons[index]) {
+        this.optionButtons[index].setVisible(true);
+        this.optionButtons[index].setFillStyle(0x2196F3); // 蓝色表示可排序
+        
+        // 移除旧的事件监听器
+        this.optionButtons[index].removeAllListeners();
+        
+        // 添加排序专用的点击事件
+        this.optionButtons[index].on('pointerdown', () => this.handleSortClick(index));
+        this.optionButtons[index].on('pointerover', () => {
+          this.optionButtons[index].setFillStyle(0x42A5F5);
+          this.optionButtons[index].setScale(1.02);
+        });
+        this.optionButtons[index].on('pointerout', () => {
+          this.optionButtons[index].setFillStyle(0x2196F3);
+          this.optionButtons[index].setScale(1.0);
+        });
+      }
+    });
+    
+    // 隐藏多余的按钮
+    for (let i = options.length; i < this.optionButtons.length; i++) {
+      this.optionButtons[i].setVisible(false);
+      this.optionTexts[i].setText('');
+    }
+    
+    // 显示排序说明
+    this.questionText?.setText(this.questionText.text + '\n\n💡 点击两个选项来交换位置');
+  }
+
+  private handleSortClick(optionIndex: number) {
+    if (this.questionType !== 'sort') return;
+    
+    console.log('🔄 排序点击:', optionIndex, '当前选中:', this.selectedSortIndex);
+    
+    if (this.selectedSortIndex === -1) {
+      // 第一次点击，选中这个选项
+      this.selectedSortIndex = optionIndex;
+      this.optionButtons[optionIndex].setFillStyle(0xFF9800); // 橙色表示选中
+      this.optionTexts[optionIndex].setStyle({ color: '#FFE0B2' }); // 浅橙色文字
+      console.log('✅ 选中选项:', optionIndex);
+    } else if (this.selectedSortIndex === optionIndex) {
+      // 点击已选中的选项，取消选择
+      this.selectedSortIndex = -1;
+      this.optionButtons[optionIndex].setFillStyle(0x2196F3); // 恢复蓝色
+      this.optionTexts[optionIndex].setStyle({ color: '#ffffff' }); // 恢复白色文字
+      console.log('❌ 取消选择');
+    } else {
+      // 第二次点击不同选项，交换位置
+      const selectedIndex = this.selectedSortIndex;
+      const targetIndex = optionIndex;
+      
+      // 交换排序数组中的位置
+      [this.sortedOrder[selectedIndex], this.sortedOrder[targetIndex]] = 
+      [this.sortedOrder[targetIndex], this.sortedOrder[selectedIndex]];
+      
+      console.log('🔄 交换位置:', selectedIndex, '<->', targetIndex);
+      console.log('📋 新排序:', this.sortedOrder);
+      
+      // 更新显示
+      this.updateSortDisplay();
+      
+      // 重置选中状态
+      this.selectedSortIndex = -1;
+      
+      // 检查是否完成排序（自动提交）
+      setTimeout(() => {
+        this.submitSortAnswer();
+      }, 500);
+    }
+  }
+
+  private updateSortDisplay() {
+    this.sortedOrder.forEach((option, index) => {
+      if (this.optionTexts[index]) {
+        this.optionTexts[index].setText(`${index + 1}. ${option}`);
+        this.optionTexts[index].setStyle({ color: '#ffffff' });
+      }
+      if (this.optionButtons[index]) {
+        this.optionButtons[index].setFillStyle(0x2196F3); // 重置为蓝色
+      }
+    });
+  }
+
+  private submitSortAnswer() {
+    if (this.questionType !== 'sort') return;
+    
+    // 将排序结果作为答案
+    const sortAnswer = this.sortedOrder.join(' > ');
+    console.log('📋 排序题答案:', sortAnswer);
+    
+    if (!this.player1Answer) {
+      this.player1Answer = sortAnswer;
+      this.showFeedback(`排序完成: ${sortAnswer}`);
+      
+      // 模拟玩家2的答案（简化处理）
+      setTimeout(() => {
+        if (!this.player2Answer && this.currentQuestion) {
+          // 随机打乱顺序作为玩家2的答案
+          const shuffled = [...this.sortedOrder].sort(() => Math.random() - 0.5);
+          this.player2Answer = shuffled.join(' > ');
+          this.showFeedback(`玩家2排序: ${this.player2Answer}`);
+          this.processAnswers();
+        }
+      }, 2000);
+    }
+  }
+
+  private calculateSortSimilarity(answer1: string, answer2: string): number {
+    // 解析排序答案
+    const order1 = answer1.split(' > ');
+    const order2 = answer2.split(' > ');
+    
+    if (order1.length !== order2.length) return 0.3; // 基本分
+    
+    // 计算位置匹配度
+    let matches = 0;
+    for (let i = 0; i < order1.length; i++) {
+      if (order1[i] === order2[i]) {
+        matches++;
+      }
+    }
+    
+    // 计算相对顺序保持度
+    let pairMatches = 0;
+    let totalPairs = 0;
+    
+    for (let i = 0; i < order1.length; i++) {
+      for (let j = i + 1; j < order1.length; j++) {
+        totalPairs++;
+        const item1_1 = order1[i];
+        const item1_2 = order1[j];
+        const pos2_1 = order2.indexOf(item1_1);
+        const pos2_2 = order2.indexOf(item1_2);
+        
+        // 如果相对顺序保持一致
+        if (pos2_1 !== -1 && pos2_2 !== -1 && pos2_1 < pos2_2) {
+          pairMatches++;
+        }
+      }
+    }
+    
+    // 综合计算相似度
+    const positionScore = matches / order1.length; // 位置匹配度 (0-1)
+    const orderScore = totalPairs > 0 ? pairMatches / totalPairs : 1; // 相对顺序保持度 (0-1)
+    
+    // 加权平均
+    const similarity = (positionScore * 0.6 + orderScore * 0.4);
+    
+    console.log('🔄 排序相似度计算:', {
+      order1, order2,
+      positionMatches: matches,
+      positionScore,
+      orderScore,
+      similarity
+    });
+    
+    return Math.max(0.3, similarity); // 最低0.3分
+  }
+
   private handleAnswerClick(optionIndex: number) {
     if (!this.currentQuestion || this.battlePhase !== 'question') return;
+    
+    // 排序题已经有专门的处理方法
+    if (this.questionType === 'sort') return;
     
     const options = this.currentQuestion.options || [];
     const selectedOption = options[optionIndex];
@@ -533,8 +730,17 @@ export class BattleScene extends Phaser.Scene {
   private processAnswers() {
     if (!this.player1Answer || !this.player2Answer || !this.currentQuestion) return;
     
-    // 计算一致性得分
-    const consistency = this.player1Answer === this.player2Answer ? 1.0 : 0.5;
+    // 计算一致性得分 - 根据题目类型使用不同算法
+    let consistency: number;
+    
+    if (this.questionType === 'sort') {
+      // 排序题：计算排序相似度
+      consistency = this.calculateSortSimilarity(this.player1Answer, this.player2Answer);
+    } else {
+      // 选择题：完全一致或部分一致
+      consistency = this.player1Answer === this.player2Answer ? 1.0 : 0.5;
+    }
+    
     const damage = Math.floor(consistency * 30 + Math.random() * 20); // 30-50伤害
     
     // 记录共识结果
