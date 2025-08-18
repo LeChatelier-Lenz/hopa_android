@@ -103,7 +103,7 @@ export class BattleScene extends Phaser.Scene {
     }
     
     // 加载"共识怪兽登场"图片
-    this.load.image('monster_entry', '/src/assets/game/monsters/共识怪兽登场中.png');
+    this.load.image('monster_entry', '/src/assets/game/monsters/Monster-is-Making-its-Appearance.png');
     
     // 随机加载一个怪兽图片
     const monsterIndex = Math.floor(Math.random() * 5) + 1;
@@ -126,7 +126,6 @@ export class BattleScene extends Phaser.Scene {
     
     // 加载新的UI界面图片
     this.load.image('question_box', '/src/assets/game/ui/Battle-Interface- Question-Box.png');
-    this.load.image('monster_appearance', '/src/assets/game/monsters/Monster-is-Making-its-Appearance.png');
   }
 
   create() {

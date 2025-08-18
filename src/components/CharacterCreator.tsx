@@ -1123,42 +1123,106 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               {config.equipment.budgetAmulet.enabled && (
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    设定你的消费预算范围
+                    选择你的预算层次
                   </Typography>
-                  <Box sx={{ px: 2, py: 3 }}>
-                    <Slider
-                      value={config.equipment.budgetAmulet.range}
-                      onChange={(_, newValue) => 
-                        updateEquipment('budgetAmulet', { range: newValue })
-                      }
-                      valueLabelDisplay="on"
-                      min={50}
-                      max={1000}
-                      step={50}
-                      marks={[
-                        { value: 50, label: '¥50' },
-                        { value: 500, label: '¥500' },
-                        { value: 1000, label: '¥1000' },
-                      ]}
-                      sx={{
-                        '& .MuiSlider-thumb': {
-                          backgroundColor: '#ff5a5e',
-                        },
-                        '& .MuiSlider-track': {
-                          backgroundColor: '#ff5a5e',
-                        },
-                        '& .MuiSlider-rail': {
-                          backgroundColor: '#ffcdd2',
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="body2" align="center" sx={{ 
-                    color: '#ff5a5e', 
-                    fontWeight: 500 
-                  }}>
-                    预算范围：¥{config.equipment.budgetAmulet.range[0]} - ¥{config.equipment.budgetAmulet.range[1]}
-                  </Typography>
+                  
+                  {aiEquipmentOptions?.budgetOptions ? (
+                    <Box sx={{ px: 1, py: 2 }}>
+                      {aiEquipmentOptions.budgetOptions.map((option, index) => {
+                        const isSelected = 
+                          config.equipment.budgetAmulet.range[0] === option.range[0] && 
+                          config.equipment.budgetAmulet.range[1] === option.range[1];
+                        
+                        // 颜色映射：经济型(绿色)、舒适型(蓝色)、豪华型(紫色)
+                        const getColorByLevel = (level: string) => {
+                          if (level.includes('经济')) return { bg: '#e8f5e8', border: '#4caf50', text: '#2e7d32' };
+                          if (level.includes('舒适')) return { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' };
+                          if (level.includes('豪华') || level.includes('高端')) return { bg: '#f3e5f5', border: '#9c27b0', text: '#7b1fa2' };
+                          return { bg: '#f5f5f5', border: '#757575', text: '#424242' }; // 默认
+                        };
+                        
+                        const colors = getColorByLevel(option.level);
+                        
+                        return (
+                          <Paper
+                            key={index}
+                            elevation={isSelected ? 3 : 1}
+                            sx={{
+                              p: 2,
+                              mb: 2,
+                              cursor: 'pointer',
+                              border: `2px solid ${isSelected ? '#ff5a5e' : colors.border}`,
+                              backgroundColor: isSelected ? '#fff5f5' : colors.bg,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                elevation: 2,
+                                transform: 'translateY(-2px)',
+                              },
+                            }}
+                            onClick={() => updateEquipment('budgetAmulet', { range: option.range })}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Chip
+                                label={option.level}
+                                size="small"
+                                sx={{
+                                  backgroundColor: colors.border,
+                                  color: 'white',
+                                  fontWeight: 500,
+                                }}
+                              />
+                              <Typography variant="h6" sx={{ 
+                                color: isSelected ? '#ff5a5e' : colors.text, 
+                                fontWeight: 600 
+                              }}>
+                                ¥{option.range[0]} - ¥{option.range[1]}
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                          </Paper>
+                        );
+                      })}
+                    </Box>
+                  ) : (
+                    // 回退到简化的手动输入
+                    <Box sx={{ px: 2, py: 3 }}>
+                      <Slider
+                        value={config.equipment.budgetAmulet.range}
+                        onChange={(_, newValue) => 
+                          updateEquipment('budgetAmulet', { range: newValue })
+                        }
+                        valueLabelDisplay="on"
+                        min={50}
+                        max={1000}
+                        step={50}
+                        marks={[
+                          { value: 50, label: '¥50' },
+                          { value: 500, label: '¥500' },
+                          { value: 1000, label: '¥1000' },
+                        ]}
+                        sx={{
+                          '& .MuiSlider-thumb': {
+                            backgroundColor: '#ff5a5e',
+                          },
+                          '& .MuiSlider-track': {
+                            backgroundColor: '#ff5a5e',
+                          },
+                          '& .MuiSlider-rail': {
+                            backgroundColor: '#ffcdd2',
+                          },
+                        }}
+                      />
+                      <Typography variant="body2" align="center" sx={{ 
+                        color: '#ff5a5e', 
+                        fontWeight: 500,
+                        mt: 1
+                      }}>
+                        预算范围：¥{config.equipment.budgetAmulet.range[0]} - ¥{config.equipment.budgetAmulet.range[1]}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               )}
             </Box>

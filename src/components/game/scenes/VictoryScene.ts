@@ -208,8 +208,9 @@ export class VictoryScene extends Phaser.Scene {
         const avatarX = startX + i * avatarSpacing;
         const avatarY = y + 50;
 
-        // 使用角色的实际图片
-        const characterKey = character?.character?.image || `character${(i % 4) + 1}`;
+        // 使用角色的实际图片 - 映射到正确的character键
+        const characterIndex = character?.character?.id ? parseInt(character.character.id.replace('cha', '')) : (i % 4) + 1;
+        const characterKey = `character${characterIndex}`;
         const avatar = this.add.image(avatarX, avatarY, characterKey);
         avatar.setDisplaySize(avatarSize, avatarSize);
         avatar.setOrigin(0.5);
@@ -266,8 +267,9 @@ export class VictoryScene extends Phaser.Scene {
         const monsterX = monsterStartX + i * monsterSpacing;
         const monsterY = y + sectionHeight + 60;
 
-        // 使用怪兽的实际图片
-        const monsterKey = monster?.image || `monster${(i % 4) + 1}`;
+        // 使用怪兽的实际图片 - 映射到正确的monster键
+        const monsterIndex = monster?.index || (i % 4) + 1;
+        const monsterKey = `monster${monsterIndex}`;
         const monsterSprite = this.add.image(monsterX, monsterY, monsterKey);
         monsterSprite.setDisplaySize(monsterSize, monsterSize);
         monsterSprite.setOrigin(0.5);
@@ -465,19 +467,38 @@ export class VictoryScene extends Phaser.Scene {
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
     }).setOrigin(0.5);
 
-    // 加入日历按钮 - 渐变效果
+    // 返回按钮 - 渐变效果  
+    const returnBtn = this.add.graphics();
+    returnBtn.fillGradientStyle(0x5C6BC0, 0x5C6BC0, 0x3F51B5, 0x303F9F, 1);
+    returnBtn.fillRoundedRect(this.scale.width * 0.375, buttonY, buttonWidth, buttonHeight, 25);
+    
+    // 按钮阴影
+    const returnShadow = this.add.graphics();
+    returnShadow.fillStyle(0x000000, 0.2);
+    returnShadow.fillRoundedRect(this.scale.width * 0.375 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    
+    returnBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.375, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+
+    const returnText = this.add.text(this.scale.width * 0.375 + buttonWidth/2, buttonY + buttonHeight / 2, '🏠 返回主页', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
+    }).setOrigin(0.5);
+
+    // 加入日历按钮 - 移到右下角
     const calendarBtn = this.add.graphics();
     calendarBtn.fillGradientStyle(0x66BB6A, 0x66BB6A, 0x4CAF50, 0x388E3C, 1);
-    calendarBtn.fillRoundedRect(this.scale.width * 0.55, buttonY, buttonWidth, buttonHeight, 25);
+    calendarBtn.fillRoundedRect(this.scale.width * 0.65, buttonY, buttonWidth, buttonHeight, 25);
     
     // 按钮阴影
     const calendarShadow = this.add.graphics();
     calendarShadow.fillStyle(0x000000, 0.2);
-    calendarShadow.fillRoundedRect(this.scale.width * 0.55 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    calendarShadow.fillRoundedRect(this.scale.width * 0.65 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    calendarBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.55, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    calendarBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.65, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const calendarText = this.add.text(this.scale.width * 0.725, buttonY + buttonHeight / 2, '📅 加入日历', {
+    const calendarText = this.add.text(this.scale.width * 0.65 + buttonWidth/2, buttonY + buttonHeight / 2, '📅 加入日历', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',
@@ -486,6 +507,7 @@ export class VictoryScene extends Phaser.Scene {
 
     // 按钮交互
     saveBtn.on('pointerdown', () => this.saveToAlbum());
+    returnBtn.on('pointerdown', () => this.returnToHome());
     calendarBtn.on('pointerdown', () => this.addToCalendar());
 
     // 按钮点击效果
@@ -502,6 +524,27 @@ export class VictoryScene extends Phaser.Scene {
     saveBtn.on('pointerout', () => {
       this.tweens.add({
         targets: saveBtn,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 200,
+        ease: 'Power2.easeOut'
+      });
+    });
+
+    // 返回按钮悬停效果
+    returnBtn.on('pointerover', () => {
+      this.tweens.add({
+        targets: returnBtn,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 200,
+        ease: 'Power2.easeOut'
+      });
+    });
+
+    returnBtn.on('pointerout', () => {
+      this.tweens.add({
+        targets: returnBtn,
         scaleX: 1,
         scaleY: 1,
         duration: 200,
@@ -542,6 +585,19 @@ export class VictoryScene extends Phaser.Scene {
       });
     });
 
+    // 返回按钮入场动画
+    [returnShadow, returnBtn, returnText].forEach((element, index) => {
+      element.setAlpha(0);
+      this.tweens.add({
+        targets: element,
+        alpha: 1,
+        y: element.y - 10,
+        duration: 600,
+        delay: 1600 + index * 100,
+        ease: 'Back.easeOut'
+      });
+    });
+
     [calendarShadow, calendarBtn, calendarText].forEach((element, index) => {
       element.setAlpha(0);
       this.tweens.add({
@@ -569,6 +625,18 @@ export class VictoryScene extends Phaser.Scene {
   private addToCalendar() {
     console.log('📅 添加到日历');
     // 实现日历功能
+  }
+
+  private returnToHome() {
+    console.log('🏠 返回主页');
+    // 触发返回主页事件
+    if (this.eventCallback) {
+      this.eventCallback('returnToHome');
+    }
+    // 如果没有回调，直接重启场景
+    else {
+      this.scene.start('LoadingScene');
+    }
   }
 
   // 设置事件回调
