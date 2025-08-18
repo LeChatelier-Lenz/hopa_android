@@ -214,6 +214,54 @@ export class AiController {
     }
   }
 
+  @ApiOperation({ summary: '生成共识方案' })
+  @ApiResponse({ status: 200, description: '共识方案生成成功' })
+  @ApiResponse({ status: 400, description: 'API请求失败' })
+  @Post('consensus')
+  async generateConsensusResult(@Body() dto: any) {
+    try {
+      console.log('🎯 收到共识方案生成请求');
+      console.log('📝 系统提示:', dto.systemPrompt.substring(0, 100) + '...');
+      console.log('👥 用户输入:', dto.userPrompt.substring(0, 200) + '...');
+      
+      // 使用 Kimi 服务生成共识方案
+      const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [
+        { role: 'system', content: dto.systemPrompt },
+        { role: 'user', content: dto.userPrompt }
+      ];
+
+      const response = await this.kimiService.chat(messages, {
+        temperature: 0.7,
+        max_tokens: 2000
+      });
+
+      // 尝试解析JSON响应
+      let consensusResult;
+      try {
+        // 提取JSON部分（去除可能的前后文字说明）
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          consensusResult = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('无法在响应中找到JSON格式的数据');
+        }
+      } catch (parseError) {
+        console.warn('🚫 JSON解析失败，尝试直接解析:', parseError);
+        // 如果JSON解析失败，尝试直接解析
+        consensusResult = JSON.parse(response);
+      }
+
+      console.log('✅ 共识方案生成成功:', consensusResult.title);
+      
+      return consensusResult;
+    } catch (error) {
+      console.error('❌ 共识方案生成失败:', error);
+      
+      // 返回简化的错误响应，让前端使用回退方案
+      throw error;
+    }
+  }
+
   @ApiOperation({ summary: '生成冲突预测题目' })
   @ApiResponse({ status: 200, description: '冲突题目生成成功' })
   @ApiResponse({ status: 400, description: 'API请求失败' })

@@ -580,6 +580,20 @@ const LaunchPage: React.FC = () => {
                     } else if (event === 'startBattle') {
                       // 开始战斗，但保持在battle阶段
                       console.log('开始与怪物战斗:', data);
+                    } else if (event === 'showConsensusResult') {
+                      // 跳转到共识结果页面
+                      console.log('跳转到共识结果页面:', data);
+                      history.push('/consensus-result', {
+                        consensusData: {
+                          consensusTheme: data.consensusTheme || {
+                            title: consensusGoal.title,
+                            description: consensusGoal.description
+                          },
+                          characters: data.characters || playerCharacters,
+                          consensusResults: data.consensusResults || [],
+                          equipment: playerCharacters[0]?.equipment || {}
+                        }
+                      });
                     }
                   }}
                 />

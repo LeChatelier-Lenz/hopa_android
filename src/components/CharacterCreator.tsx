@@ -1249,22 +1249,83 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               {config.equipment.timeCompass.enabled && (
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    选择游玩时长偏好
+                    选择你的时间安排
                   </Typography>
-                  <FormControl fullWidth sx={{ mt: 2 }}>
-                    <InputLabel>时长偏好</InputLabel>
-                    <Select
-                      value={config.equipment.timeCompass.duration}
-                      label="时长偏好"
-                      onChange={(e) => 
-                        updateEquipment('timeCompass', { duration: e.target.value })
-                      }
-                    >
-                      <MenuItem value="half-day">半日游 (4-6小时)</MenuItem>
-                      <MenuItem value="full-day">全日游 (8-10小时)</MenuItem>
-                      <MenuItem value="overnight">过夜游 (1-2天)</MenuItem>
-                    </Select>
-                  </FormControl>
+                  
+                  {aiEquipmentOptions?.timeOptions ? (
+                    <Box sx={{ px: 1, py: 2 }}>
+                      {aiEquipmentOptions.timeOptions.map((option, index) => {
+                        const isSelected = config.equipment.timeCompass.duration === option.duration;
+                        
+                        // 颜色映射：半日游(浅蓝)、全日游(中蓝)、过夜游(深蓝)
+                        const getColorByDuration = (duration: string) => {
+                          if (duration.includes('half-day') || duration.includes('半日')) return { bg: '#e3f2fd', border: '#03a9f4', text: '#0277bd' };
+                          if (duration.includes('full-day') || duration.includes('全日')) return { bg: '#e1f5fe', border: '#00bcd4', text: '#0097a7' };
+                          if (duration.includes('overnight') || duration.includes('过夜') || duration.includes('天')) return { bg: '#e8f4fd', border: '#2196f3', text: '#1565c0' };
+                          return { bg: '#f5f5f5', border: '#757575', text: '#424242' }; // 默认
+                        };
+                        
+                        const colors = getColorByDuration(option.duration);
+                        
+                        return (
+                          <Paper
+                            key={index}
+                            elevation={isSelected ? 3 : 1}
+                            sx={{
+                              p: 2,
+                              mb: 2,
+                              cursor: 'pointer',
+                              border: `2px solid ${isSelected ? '#ff5a5e' : colors.border}`,
+                              backgroundColor: isSelected ? '#fff5f5' : colors.bg,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                elevation: 2,
+                                transform: 'translateY(-2px)',
+                              },
+                            }}
+                            onClick={() => updateEquipment('timeCompass', { duration: option.duration as 'half-day' | 'full-day' | 'overnight' })}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Chip
+                                label={option.suitable}
+                                size="small"
+                                sx={{
+                                  backgroundColor: colors.border,
+                                  color: 'white',
+                                  fontWeight: 500,
+                                }}
+                              />
+                              <Typography variant="h6" sx={{ 
+                                color: isSelected ? '#ff5a5e' : colors.text, 
+                                fontWeight: 600 
+                              }}>
+                                {option.duration.replace('half-day', '半日游').replace('full-day', '全日游').replace('overnight', '过夜游')}
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                          </Paper>
+                        );
+                      })}
+                    </Box>
+                  ) : (
+                    // 回退到原始选择器
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                      <InputLabel>时长偏好</InputLabel>
+                      <Select
+                        value={config.equipment.timeCompass.duration}
+                        label="时长偏好"
+                        onChange={(e) => 
+                          updateEquipment('timeCompass', { duration: e.target.value as 'half-day' | 'full-day' | 'overnight' })
+                        }
+                      >
+                        <MenuItem value="half-day">半日游 (4-6小时)</MenuItem>
+                        <MenuItem value="full-day">全日游 (8-10小时)</MenuItem>
+                        <MenuItem value="overnight">过夜游 (1-2天)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
                 </Box>
               )}
             </Box>

@@ -495,6 +495,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.start('VictoryScene', { 
         victory: true,
         characters: this.characters.map(char => char.getConfig()),
+        monsters: this.monsters.map(monster => monster.getConfig()),
         consensusResults: this.consensusResults,
         consensusTheme: this.gameData?.consensusTheme
       });

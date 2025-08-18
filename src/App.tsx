@@ -21,6 +21,7 @@ import PreferenceSettings from './pages/preferences';
 import PreferencesComplete from './pages/preferences-complete';
 import LaunchPage from './pages/launch';
 import GamePage from './pages/game';
+import ConsensusResultPage from './pages/consensus-result';
 import ErrorPage from './pages/ErrorPage';
 import { theme } from './theme/theme';
 import { PreferencesProvider } from './context/PreferencesContext';
@@ -105,6 +106,11 @@ const App: React.FC = () => {
             {/* 游戏页面 - 不显示底部导航栏 */}
             <Route exact path="/game">
               <GamePage />
+            </Route>
+            
+            {/* 共识结果页面 - 不显示底部导航栏 */}
+            <Route exact path="/consensus-result">
+              <ConsensusResultPage />
             </Route>
             
             {/* 错误页面 - 不显示底部导航栏 */}

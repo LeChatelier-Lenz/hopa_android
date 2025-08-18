@@ -20,6 +20,7 @@ interface ConsensusResult {
 interface VictoryData {
   victory: boolean;
   characters: any[];
+  monsters?: any[];
   consensusResults?: ConsensusResult[];
   consensusTheme?: {
     title: string;
@@ -208,8 +209,10 @@ export class VictoryScene extends Phaser.Scene {
         const avatarX = startX + i * avatarSpacing;
         const avatarY = y + 50;
 
-        // 使用角色的实际图片 - 映射到正确的character键
-        const characterIndex = character?.character?.id ? parseInt(character.character.id.replace('cha', '')) : (i % 4) + 1;
+        // 使用角色的实际图片 - 从config中获取
+        console.log('🎭 角色数据:', character);
+        const characterId = character?.id || character?.character?.id || `cha${(i % 4) + 1}`;
+        const characterIndex = characterId.includes('cha') ? parseInt(characterId.replace('cha', '')) : (i % 4) + 1;
         const characterKey = `character${characterIndex}`;
         const avatar = this.add.image(avatarX, avatarY, characterKey);
         avatar.setDisplaySize(avatarSize, avatarSize);
@@ -254,7 +257,7 @@ export class VictoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // 显示实际击败的怪兽
-    const defeatedMonsters = (this.victoryData as any)?.monsters || [];
+    const defeatedMonsters = this.victoryData?.monsters || [];
     const monsterCount = Math.min(defeatedMonsters.length, 4);
     
     if (monsterCount > 0) {
@@ -268,7 +271,9 @@ export class VictoryScene extends Phaser.Scene {
         const monsterY = y + sectionHeight + 60;
 
         // 使用怪兽的实际图片 - 映射到正确的monster键
-        const monsterIndex = monster?.index || (i % 4) + 1;
+        console.log('👹 怪物数据:', monster);
+        const monsterId = monster?.id || monster?.name || `monster${(i % 4) + 1}`;
+        const monsterIndex = monsterId.includes('monster') ? parseInt(monsterId.replace('monster', '')) : (i % 4) + 1;
         const monsterKey = `monster${monsterIndex}`;
         const monsterSprite = this.add.image(monsterX, monsterY, monsterKey);
         monsterSprite.setDisplaySize(monsterSize, monsterSize);
@@ -444,54 +449,71 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private createActionButtons() {
+    // 返回按钮 - 左上角
+    const returnBtnSize = 50;
+    const returnBtn = this.add.graphics();
+    returnBtn.fillGradientStyle(0x5C6BC0, 0x5C6BC0, 0x3F51B5, 0x303F9F, 1);
+    returnBtn.fillRoundedRect(20, 20, returnBtnSize * 2, returnBtnSize, 25);
+    
+    const returnShadow = this.add.graphics();
+    returnShadow.fillStyle(0x000000, 0.2);
+    returnShadow.fillRoundedRect(22, 22, returnBtnSize * 2, returnBtnSize, 25);
+    
+    returnBtn.setInteractive(new Phaser.Geom.Rectangle(20, 20, returnBtnSize * 2, returnBtnSize), Phaser.Geom.Rectangle.Contains);
+
+    const returnText = this.add.text(70, 45, '🏠 返回', {
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
+    }).setOrigin(0.5);
+
+    // 底部操作按钮区域
     const buttonY = this.scale.height * 0.88;
     const buttonWidth = Math.min(this.scale.width * 0.35, 140);
     const buttonHeight = 45;
 
-    // 保存相册按钮 - 渐变效果
+    // 保存相册按钮
     const saveBtn = this.add.graphics();
     saveBtn.fillGradientStyle(0xFFB74D, 0xFFB74D, 0xFF9800, 0xF57C00, 1);
-    saveBtn.fillRoundedRect(this.scale.width * 0.1, buttonY, buttonWidth, buttonHeight, 25);
+    saveBtn.fillRoundedRect(this.scale.width * 0.15, buttonY, buttonWidth, buttonHeight, 25);
     
-    // 按钮阴影
     const saveShadow = this.add.graphics();
     saveShadow.fillStyle(0x000000, 0.2);
-    saveShadow.fillRoundedRect(this.scale.width * 0.1 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    saveShadow.fillRoundedRect(this.scale.width * 0.15 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    saveBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.1, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    saveBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.15, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const saveText = this.add.text(this.scale.width * 0.275, buttonY + buttonHeight / 2, '💾 保存相册', {
+    const saveText = this.add.text(this.scale.width * 0.15 + buttonWidth/2, buttonY + buttonHeight / 2, '💾 保存相册', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
     }).setOrigin(0.5);
 
-    // 返回按钮 - 渐变效果  
-    const returnBtn = this.add.graphics();
-    returnBtn.fillGradientStyle(0x5C6BC0, 0x5C6BC0, 0x3F51B5, 0x303F9F, 1);
-    returnBtn.fillRoundedRect(this.scale.width * 0.375, buttonY, buttonWidth, buttonHeight, 25);
+    // 查看详情按钮 - 中间
+    const detailBtn = this.add.graphics();
+    detailBtn.fillGradientStyle(0xE91E63, 0xE91E63, 0xC2185B, 0xAD1457, 1);
+    detailBtn.fillRoundedRect(this.scale.width * 0.4, buttonY, buttonWidth, buttonHeight, 25);
     
-    // 按钮阴影
-    const returnShadow = this.add.graphics();
-    returnShadow.fillStyle(0x000000, 0.2);
-    returnShadow.fillRoundedRect(this.scale.width * 0.375 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    const detailShadow = this.add.graphics();
+    detailShadow.fillStyle(0x000000, 0.2);
+    detailShadow.fillRoundedRect(this.scale.width * 0.4 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    returnBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.375, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    detailBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.4, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const returnText = this.add.text(this.scale.width * 0.375 + buttonWidth/2, buttonY + buttonHeight / 2, '🏠 返回主页', {
+    const detailText = this.add.text(this.scale.width * 0.4 + buttonWidth/2, buttonY + buttonHeight / 2, '📋 查看详情', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
     }).setOrigin(0.5);
 
-    // 加入日历按钮 - 移到右下角
+    // 加入日历按钮 - 右侧
     const calendarBtn = this.add.graphics();
     calendarBtn.fillGradientStyle(0x66BB6A, 0x66BB6A, 0x4CAF50, 0x388E3C, 1);
     calendarBtn.fillRoundedRect(this.scale.width * 0.65, buttonY, buttonWidth, buttonHeight, 25);
     
-    // 按钮阴影
     const calendarShadow = this.add.graphics();
     calendarShadow.fillStyle(0x000000, 0.2);
     calendarShadow.fillRoundedRect(this.scale.width * 0.65 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
@@ -508,6 +530,7 @@ export class VictoryScene extends Phaser.Scene {
     // 按钮交互
     saveBtn.on('pointerdown', () => this.saveToAlbum());
     returnBtn.on('pointerdown', () => this.returnToHome());
+    detailBtn.on('pointerdown', () => this.showConsensusDetails());
     calendarBtn.on('pointerdown', () => this.addToCalendar());
 
     // 按钮点击效果
@@ -552,6 +575,27 @@ export class VictoryScene extends Phaser.Scene {
       });
     });
 
+    // 详情按钮悬停效果
+    detailBtn.on('pointerover', () => {
+      this.tweens.add({
+        targets: detailBtn,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 200,
+        ease: 'Power2.easeOut'
+      });
+    });
+
+    detailBtn.on('pointerout', () => {
+      this.tweens.add({
+        targets: detailBtn,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 200,
+        ease: 'Power2.easeOut'
+      });
+    });
+
     calendarBtn.on('pointerover', () => {
       this.tweens.add({
         targets: calendarBtn,
@@ -585,8 +629,21 @@ export class VictoryScene extends Phaser.Scene {
       });
     });
 
-    // 返回按钮入场动画
+    // 返回按钮入场动画 - 左上角
     [returnShadow, returnBtn, returnText].forEach((element, index) => {
+      element.setAlpha(0);
+      this.tweens.add({
+        targets: element,
+        alpha: 1,
+        x: element.x - 10,
+        duration: 600,
+        delay: 800 + index * 100,
+        ease: 'Back.easeOut'
+      });
+    });
+
+    // 详情按钮入场动画
+    [detailShadow, detailBtn, detailText].forEach((element, index) => {
       element.setAlpha(0);
       this.tweens.add({
         targets: element,
@@ -612,9 +669,20 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private showConsensusDetails() {
-    // 显示共识详细信息模态框
     console.log('📋 显示共识详情');
-    // 这里可以显示更详细的共识结果
+    // 触发查看详情事件，跳转到共识结果页面
+    if (this.eventCallback) {
+      this.eventCallback('showConsensusResult', {
+        consensusTheme: this.victoryData?.consensusTheme,
+        characters: this.victoryData?.characters,
+        consensusResults: this.victoryData?.consensusResults
+      });
+    }
+    // 如果没有回调，也可以直接跳转或显示详情
+    else {
+      console.log('🔗 准备跳转到共识详情页面...');
+      // 这里可以通过其他方式跳转到详情页面
+    }
   }
 
   private saveToAlbum() {
