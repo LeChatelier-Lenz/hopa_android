@@ -492,10 +492,38 @@ export class BattleScene extends Phaser.Scene {
   private startNextRound() {
     if (this.monsters.every(monster => monster.isDeadStatus())) {
       // 所有怪物都被击败，进入胜利场景
+      
+      // 构建增强的角色数据，包含显示所需的图片信息
+      const enhancedCharacters = this.characters.map((char, index) => {
+        const config = char.getConfig();
+        const characterImages = ['character1', 'character2', 'character3', 'character4'];
+        return {
+          ...config,
+          character: {
+            ...config,
+            image: characterImages[index % 4], // 确保有image字段用于显示
+            battleIndex: index // 记录战斗中的位置
+          }
+        };
+      });
+      
+      // 构建增强的怪物数据，包含战斗索引信息
+      const enhancedMonsters = this.monsters.map((monster, index) => {
+        const config = monster.getConfig();
+        return {
+          ...config,
+          battleIndex: index + 1, // 怪物从1开始编号
+          monsterId: config.id,
+          category: config.type
+        };
+      });
+      
+      console.log('🎊 进入胜利场景，角色数据:', enhancedCharacters, '怪物数据:', enhancedMonsters);
+      
       this.scene.start('VictoryScene', { 
         victory: true,
-        characters: this.characters.map(char => char.getConfig()),
-        monsters: this.monsters.map(monster => monster.getConfig()),
+        characters: enhancedCharacters,
+        monsters: enhancedMonsters,
         consensusResults: this.consensusResults,
         consensusTheme: this.gameData?.consensusTheme
       });

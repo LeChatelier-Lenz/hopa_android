@@ -209,14 +209,21 @@ export class VictoryScene extends Phaser.Scene {
         const avatarX = startX + i * avatarSpacing;
         const avatarY = y + 50;
 
-        // 使用角色的实际图片 - 优先使用image字段
+        // 使用角色的实际图片 - 多种数据源兼容
         console.log('🎭 角色数据:', character);
         
-        // 优先使用已有的image字段，这个字段已经是正确的key格式
-        let characterKey = character?.character?.image;
+        let characterKey = null;
         
-        if (!characterKey) {
-          // 如果没有image字段，则从ID解析
+        // 1. 尝试从character.character.image获取
+        if (character?.character?.image) {
+          characterKey = character.character.image;
+        }
+        // 2. 尝试从character.image获取
+        else if (character?.image) {
+          characterKey = character.image;
+        }
+        // 3. 尝试从ID解析
+        else {
           const characterId = character?.character?.id || character?.id || `cha${(i % 4) + 1}`;
           if (characterId.startsWith('char')) {
             // 处理'char1', 'char2'等格式
@@ -233,8 +240,21 @@ export class VictoryScene extends Phaser.Scene {
           }
         }
         
+        // 4. 确保characterKey有效
+        if (!characterKey) {
+          characterKey = `character${(i % 4) + 1}`;
+        }
+        
         console.log('🎭 使用角色图片key:', characterKey);
-        const avatar = this.add.image(avatarX, avatarY, characterKey);
+        
+        // 检查图片是否存在，如果不存在则使用默认图片
+        let finalCharacterKey = characterKey;
+        if (!this.textures.exists(characterKey)) {
+          console.warn(`⚠️ 角色图片 ${characterKey} 不存在，使用默认图片`);
+          finalCharacterKey = `character${(i % 4) + 1}`;
+        }
+        
+        const avatar = this.add.image(avatarX, avatarY, finalCharacterKey);
         avatar.setDisplaySize(avatarSize, avatarSize);
         avatar.setOrigin(0.5);
         
@@ -281,7 +301,7 @@ export class VictoryScene extends Phaser.Scene {
     const monsterCount = Math.min(defeatedMonsters.length, 4);
     
     if (monsterCount > 0) {
-      const monsterSize = Math.min(width / (monsterCount + 1), 50);
+      const monsterSize = Math.min(width / (monsterCount + 1), 45); // 减小怪物尺寸
       const monsterSpacing = width * 0.6 / monsterCount;
       const monsterStartX = centerX - ((monsterCount - 1) * monsterSpacing / 2);
 
@@ -290,41 +310,59 @@ export class VictoryScene extends Phaser.Scene {
         const monsterX = monsterStartX + i * monsterSpacing;
         const monsterY = y + sectionHeight + 60;
 
-        // 使用怪兽的实际图片 - 智能映射到正确的monster键
+        // 使用怪兽的实际图片 - 优先使用战斗中的怪物数据
         console.log('👹 怪物数据:', monster);
         
-        let monsterIndex = (i % 4) + 1; // 默认值
+        let monsterIndex = 1; // 默认值
         
-        const monsterId = monster?.id || monster?.name || '';
-        const monsterType = monster?.type || '';
+        // 优先从战斗数据中获取怪物信息
+        const monsterId = monster?.id || monster?.name || monster?.monsterId || '';
+        const monsterType = monster?.type || monster?.category || '';
+        const battleMonsterIndex = monster?.battleIndex || monster?.index;
         
-        // 根据怪物ID和类型智能映射
-        if (monsterId === 'consensus_monster') {
+        // 1. 如果有战斗索引，直接使用
+        if (battleMonsterIndex !== undefined && battleMonsterIndex >= 1 && battleMonsterIndex <= 4) {
+          monsterIndex = battleMonsterIndex;
+        }
+        // 2. 根据怪物ID和类型智能映射
+        else if (monsterId === 'consensus_monster') {
           // 共识怪物根据类型选择图片
           const typeMapping: {[key: string]: number} = {
             'budget': 1,
             'time': 2, 
             'preference': 3,
+            'attraction': 3,
+            'cuisine': 4,
             'conflict': 4
           };
           monsterIndex = typeMapping[monsterType] || 1;
-        } else if (monsterId.startsWith('monster') && monsterId.length > 7) {
-          // 处理'monster1', 'monster2'等直接格式
+        }
+        // 3. 处理monster1, monster2等直接格式
+        else if (monsterId.includes('monster')) {
           const numMatch = monsterId.match(/monster(\d+)/);
           if (numMatch) {
-            monsterIndex = parseInt(numMatch[1]) || monsterIndex;
+            monsterIndex = parseInt(numMatch[1]) || 1;
           }
-        } else if (/^\d+$/.test(monsterId)) {
-          // 如果ID是纯数字
-          monsterIndex = parseInt(monsterId) || monsterIndex;
+        }
+        // 4. 如果ID是纯数字
+        else if (/^\d+$/.test(monsterId)) {
+          monsterIndex = parseInt(monsterId) || 1;
         }
         
         // 确保索引在有效范围内(1-4)
         monsterIndex = Math.max(1, Math.min(4, monsterIndex));
         
         const monsterKey = `monster${monsterIndex}`;
-        console.log('👹 使用怪物图片key:', monsterKey, '(type:', monsterType, ')');
-        const monsterSprite = this.add.image(monsterX, monsterY, monsterKey);
+        console.log('👹 使用怪物图片key:', monsterKey, '(原始ID:', monsterId, ', type:', monsterType, ', battleIndex:', battleMonsterIndex, ')');
+        
+        // 检查怪物图片是否存在
+        let finalMonsterKey = monsterKey;
+        if (!this.textures.exists(monsterKey)) {
+          console.warn(`⚠️ 怪物图片 ${monsterKey} 不存在，使用默认图片`);
+          finalMonsterKey = 'monster1';
+        }
+        
+        const monsterSprite = this.add.image(monsterX, monsterY, finalMonsterKey);
         monsterSprite.setDisplaySize(monsterSize, monsterSize);
         monsterSprite.setOrigin(0.5);
         monsterSprite.setTint(0x666666); // 变灰表示被击败
@@ -404,7 +442,7 @@ export class VictoryScene extends Phaser.Scene {
     });
   }
 
-  private createConsensusResultsSection(x: number, y: number, width: number) {
+  private createConsensusResultsSection(_x: number, y: number, width: number) {
     const centerX = this.scale.width / 2;
     
     // 共识成果标题
