@@ -209,11 +209,31 @@ export class VictoryScene extends Phaser.Scene {
         const avatarX = startX + i * avatarSpacing;
         const avatarY = y + 50;
 
-        // 使用角色的实际图片 - 从config中获取
+        // 使用角色的实际图片 - 优先使用image字段
         console.log('🎭 角色数据:', character);
-        const characterId = character?.id || character?.character?.id || `cha${(i % 4) + 1}`;
-        const characterIndex = characterId.includes('cha') ? parseInt(characterId.replace('cha', '')) : (i % 4) + 1;
-        const characterKey = `character${characterIndex}`;
+        
+        // 优先使用已有的image字段，这个字段已经是正确的key格式
+        let characterKey = character?.character?.image;
+        
+        if (!characterKey) {
+          // 如果没有image字段，则从ID解析
+          const characterId = character?.character?.id || character?.id || `cha${(i % 4) + 1}`;
+          if (characterId.startsWith('char')) {
+            // 处理'char1', 'char2'等格式
+            const numMatch = characterId.match(/\d+/);
+            const characterIndex = numMatch ? parseInt(numMatch[0]) : (i % 4) + 1;
+            characterKey = `character${characterIndex}`;
+          } else if (characterId.startsWith('cha')) {
+            // 处理'cha1', 'cha2'等格式  
+            const characterIndex = parseInt(characterId.replace('cha', '')) || (i % 4) + 1;
+            characterKey = `character${characterIndex}`;
+          } else {
+            // 回退方案
+            characterKey = `character${(i % 4) + 1}`;
+          }
+        }
+        
+        console.log('🎭 使用角色图片key:', characterKey);
         const avatar = this.add.image(avatarX, avatarY, characterKey);
         avatar.setDisplaySize(avatarSize, avatarSize);
         avatar.setOrigin(0.5);
@@ -270,11 +290,40 @@ export class VictoryScene extends Phaser.Scene {
         const monsterX = monsterStartX + i * monsterSpacing;
         const monsterY = y + sectionHeight + 60;
 
-        // 使用怪兽的实际图片 - 映射到正确的monster键
+        // 使用怪兽的实际图片 - 智能映射到正确的monster键
         console.log('👹 怪物数据:', monster);
-        const monsterId = monster?.id || monster?.name || `monster${(i % 4) + 1}`;
-        const monsterIndex = monsterId.includes('monster') ? parseInt(monsterId.replace('monster', '')) : (i % 4) + 1;
+        
+        let monsterIndex = (i % 4) + 1; // 默认值
+        
+        const monsterId = monster?.id || monster?.name || '';
+        const monsterType = monster?.type || '';
+        
+        // 根据怪物ID和类型智能映射
+        if (monsterId === 'consensus_monster') {
+          // 共识怪物根据类型选择图片
+          const typeMapping: {[key: string]: number} = {
+            'budget': 1,
+            'time': 2, 
+            'preference': 3,
+            'conflict': 4
+          };
+          monsterIndex = typeMapping[monsterType] || 1;
+        } else if (monsterId.startsWith('monster') && monsterId.length > 7) {
+          // 处理'monster1', 'monster2'等直接格式
+          const numMatch = monsterId.match(/monster(\d+)/);
+          if (numMatch) {
+            monsterIndex = parseInt(numMatch[1]) || monsterIndex;
+          }
+        } else if (/^\d+$/.test(monsterId)) {
+          // 如果ID是纯数字
+          monsterIndex = parseInt(monsterId) || monsterIndex;
+        }
+        
+        // 确保索引在有效范围内(1-4)
+        monsterIndex = Math.max(1, Math.min(4, monsterIndex));
+        
         const monsterKey = `monster${monsterIndex}`;
+        console.log('👹 使用怪物图片key:', monsterKey, '(type:', monsterType, ')');
         const monsterSprite = this.add.image(monsterX, monsterY, monsterKey);
         monsterSprite.setDisplaySize(monsterSize, monsterSize);
         monsterSprite.setOrigin(0.5);
@@ -468,23 +517,29 @@ export class VictoryScene extends Phaser.Scene {
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 2, fill: true }
     }).setOrigin(0.5);
 
-    // 底部操作按钮区域
+    // 底部操作按钮区域 - 重新计算防止重叠
     const buttonY = this.scale.height * 0.88;
-    const buttonWidth = Math.min(this.scale.width * 0.35, 140);
     const buttonHeight = 45;
+    const buttonMargin = 8; // 按钮间隙
+    const totalMargin = buttonMargin * 4; // 左右边距 + 两个按钮间隙
+    const availableWidth = this.scale.width - totalMargin;
+    const buttonWidth = Math.min(availableWidth / 3, 120); // 三等分可用宽度，最大120px
+    
+    // 计算按钮起始位置，确保居中且不重叠
+    const startX = (this.scale.width - (buttonWidth * 3 + buttonMargin * 2)) / 2;
 
     // 保存相册按钮
     const saveBtn = this.add.graphics();
     saveBtn.fillGradientStyle(0xFFB74D, 0xFFB74D, 0xFF9800, 0xF57C00, 1);
-    saveBtn.fillRoundedRect(this.scale.width * 0.15, buttonY, buttonWidth, buttonHeight, 25);
+    saveBtn.fillRoundedRect(startX, buttonY, buttonWidth, buttonHeight, 25);
     
     const saveShadow = this.add.graphics();
     saveShadow.fillStyle(0x000000, 0.2);
-    saveShadow.fillRoundedRect(this.scale.width * 0.15 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    saveShadow.fillRoundedRect(startX + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    saveBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.15, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    saveBtn.setInteractive(new Phaser.Geom.Rectangle(startX, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const saveText = this.add.text(this.scale.width * 0.15 + buttonWidth/2, buttonY + buttonHeight / 2, '💾 保存相册', {
+    const saveText = this.add.text(startX + buttonWidth/2, buttonY + buttonHeight / 2, '💾 保存相册', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',
@@ -492,17 +547,18 @@ export class VictoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // 查看详情按钮 - 中间
+    const detailBtnX = startX + buttonWidth + buttonMargin;
     const detailBtn = this.add.graphics();
     detailBtn.fillGradientStyle(0xE91E63, 0xE91E63, 0xC2185B, 0xAD1457, 1);
-    detailBtn.fillRoundedRect(this.scale.width * 0.4, buttonY, buttonWidth, buttonHeight, 25);
+    detailBtn.fillRoundedRect(detailBtnX, buttonY, buttonWidth, buttonHeight, 25);
     
     const detailShadow = this.add.graphics();
     detailShadow.fillStyle(0x000000, 0.2);
-    detailShadow.fillRoundedRect(this.scale.width * 0.4 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    detailShadow.fillRoundedRect(detailBtnX + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    detailBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.4, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    detailBtn.setInteractive(new Phaser.Geom.Rectangle(detailBtnX, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const detailText = this.add.text(this.scale.width * 0.4 + buttonWidth/2, buttonY + buttonHeight / 2, '📋 查看详情', {
+    const detailText = this.add.text(detailBtnX + buttonWidth/2, buttonY + buttonHeight / 2, '📋 查看详情', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',
@@ -510,17 +566,18 @@ export class VictoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // 加入日历按钮 - 右侧
+    const calendarBtnX = startX + (buttonWidth + buttonMargin) * 2;
     const calendarBtn = this.add.graphics();
     calendarBtn.fillGradientStyle(0x66BB6A, 0x66BB6A, 0x4CAF50, 0x388E3C, 1);
-    calendarBtn.fillRoundedRect(this.scale.width * 0.65, buttonY, buttonWidth, buttonHeight, 25);
+    calendarBtn.fillRoundedRect(calendarBtnX, buttonY, buttonWidth, buttonHeight, 25);
     
     const calendarShadow = this.add.graphics();
     calendarShadow.fillStyle(0x000000, 0.2);
-    calendarShadow.fillRoundedRect(this.scale.width * 0.65 + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
+    calendarShadow.fillRoundedRect(calendarBtnX + 2, buttonY + 2, buttonWidth, buttonHeight, 25);
     
-    calendarBtn.setInteractive(new Phaser.Geom.Rectangle(this.scale.width * 0.65, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+    calendarBtn.setInteractive(new Phaser.Geom.Rectangle(calendarBtnX, buttonY, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
-    const calendarText = this.add.text(this.scale.width * 0.65 + buttonWidth/2, buttonY + buttonHeight / 2, '📅 加入日历', {
+    const calendarText = this.add.text(calendarBtnX + buttonWidth/2, buttonY + buttonHeight / 2, '📅 加入日历', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
       color: '#ffffff',
       fontStyle: 'bold',

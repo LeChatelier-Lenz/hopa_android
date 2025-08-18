@@ -678,7 +678,9 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                     '& img': {
                       objectFit: 'cover',
                       width: '100%',
-                      height: '100%'
+                      height: '100%',
+                      maxWidth: '100%',
+                      maxHeight: '100%'
                     },
                     '&:hover': {
                       boxShadow: '0 12px 32px rgba(255, 90, 94, 0.6)',
@@ -1085,7 +1087,9 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          gap: 1
+          gap: 1,
+          fontSize: '1.3rem',
+          fontWeight: 600
         }}>
           {selectedEquipment === 'budgetAmulet' && <AttachMoney />}
           {selectedEquipment === 'timeCompass' && <Schedule />}
@@ -1101,11 +1105,11 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'atmosphereRing' && '氛围之币'}
         </DialogTitle>
         
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3, minHeight: '400px', overflow: 'visible' }}>
           {selectedEquipment === 'budgetAmulet' && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">预算四叶草设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>预算四叶草设置</Typography>
                 <Switch
                   checked={config.equipment.budgetAmulet.enabled}
                   onChange={(e) => updateEquipment('budgetAmulet', { enabled: e.target.checked })}
@@ -1122,7 +1126,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.budgetAmulet.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择你的预算层次
                   </Typography>
                   
@@ -1173,12 +1177,13 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                               />
                               <Typography variant="h6" sx={{ 
                                 color: isSelected ? '#ff5a5e' : colors.text, 
-                                fontWeight: 600 
+                                fontWeight: 600,
+                                fontSize: '1.1rem'
                               }}>
                                 ¥{option.range[0]} - ¥{option.range[1]}
                               </Typography>
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.95rem' }}>
                               {option.description}
                             </Typography>
                           </Paper>
@@ -1231,7 +1236,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'timeCompass' && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">时间魔法棒设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>时间魔法棒设置</Typography>
                 <Switch
                   checked={config.equipment.timeCompass.enabled}
                   onChange={(e) => updateEquipment('timeCompass', { enabled: e.target.checked })}
@@ -1248,7 +1253,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.timeCompass.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择你的时间安排
                   </Typography>
                   
@@ -1297,12 +1302,13 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                               />
                               <Typography variant="h6" sx={{ 
                                 color: isSelected ? '#ff5a5e' : colors.text, 
-                                fontWeight: 600 
+                                fontWeight: 600,
+                                fontSize: '1.1rem'
                               }}>
                                 {option.duration.replace('half-day', '半日游').replace('full-day', '全日游').replace('overnight', '过夜游')}
                               </Typography>
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.95rem' }}>
                               {option.description}
                             </Typography>
                           </Paper>
@@ -1334,7 +1340,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'attractionShield' && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">景点之钻设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>景点之钻设置</Typography>
                 <Switch
                   checked={config.equipment.attractionShield.enabled}
                   onChange={(e) => updateEquipment('attractionShield', { enabled: e.target.checked })}
@@ -1351,7 +1357,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.attractionShield.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择想去的景点（可多选）
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
@@ -1372,6 +1378,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                           backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) ? '#ff5a5e' : 'transparent',
                           color: config.equipment.attractionShield.preferences.includes(attraction) ? 'white' : '#ff5a5e',
                           borderColor: '#ff5a5e',
+                          fontSize: '0.9rem',
+                          height: '36px',
                           '&:hover': {
                             backgroundColor: config.equipment.attractionShield.preferences.includes(attraction) 
                               ? '#ff4a4e' 
@@ -1389,7 +1397,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'cuisineGem' && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">美食之戒设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>美食之戒设置</Typography>
                 <Switch
                   checked={config.equipment.cuisineGem.enabled}
                   onChange={(e) => updateEquipment('cuisineGem', { enabled: e.target.checked })}
@@ -1406,7 +1414,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.cuisineGem.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择餐饮偏好（可多选）
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
@@ -1427,6 +1435,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                           backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) ? '#ff5a5e' : 'transparent',
                           color: config.equipment.cuisineGem.types.includes(cuisine) ? 'white' : '#ff5a5e',
                           borderColor: '#ff5a5e',
+                          fontSize: '0.9rem',
+                          height: '36px',
                           '&:hover': {
                             backgroundColor: config.equipment.cuisineGem.types.includes(cuisine) 
                               ? '#ff4a4e' 
@@ -1444,7 +1454,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'transportationKey' && config.equipment.transportationKey && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">交通之钥设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>交通之钥设置</Typography>
                 <Switch
                   checked={config.equipment.transportationKey.enabled}
                   onChange={(e) => updateEquipment('transportationKey', { enabled: e.target.checked })}
@@ -1461,7 +1471,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.transportationKey.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择偏好的交通方式
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -1482,6 +1492,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                           backgroundColor: config.equipment.transportationKey.preferences.includes(transport) ? '#9C27B0' : 'transparent',
                           color: config.equipment.transportationKey.preferences.includes(transport) ? 'white' : '#9C27B0',
                           borderColor: '#9C27B0',
+                          fontSize: '0.9rem',
+                          height: '36px',
                           '&:hover': {
                             backgroundColor: config.equipment.transportationKey.preferences.includes(transport) 
                               ? '#7B1FA2' 
@@ -1499,7 +1511,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
           {selectedEquipment === 'atmosphereRing' && config.equipment.atmosphereRing && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">氛围之币设置</Typography>
+                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600 }}>氛围之币设置</Typography>
                 <Switch
                   checked={config.equipment.atmosphereRing.enabled}
                   onChange={(e) => updateEquipment('atmosphereRing', { enabled: e.target.checked })}
@@ -1516,7 +1528,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               
               {config.equipment.atmosphereRing.enabled && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                     选择喜欢的活动氛围
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -1537,6 +1549,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                           backgroundColor: config.equipment.atmosphereRing.preferences.includes(atmosphere) ? '#FF9800' : 'transparent',
                           color: config.equipment.atmosphereRing.preferences.includes(atmosphere) ? 'white' : '#FF9800',
                           borderColor: '#FF9800',
+                          fontSize: '0.9rem',
+                          height: '36px',
                           '&:hover': {
                             backgroundColor: config.equipment.atmosphereRing.preferences.includes(atmosphere) 
                               ? '#F57C00' 
@@ -1558,7 +1572,10 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             variant="contained"
             sx={{
               bgcolor: '#ff5a5e',
-              '&:hover': { bgcolor: '#ff4a4e' }
+              '&:hover': { bgcolor: '#ff4a4e' },
+              fontSize: '1rem',
+              px: 3,
+              py: 1
             }}
           >
             确定

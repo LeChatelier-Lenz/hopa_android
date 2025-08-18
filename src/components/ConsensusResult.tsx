@@ -209,9 +209,21 @@ const ConsensusResultComponent: React.FC<ConsensusResultProps> = ({ data, onBack
   if (!consensusResult) return renderErrorState();
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa', pb: 4 }}>
-      {/* 头部导航 */}
-      <Paper elevation={1} sx={{ p: 2, backgroundColor: 'white', borderRadius: 0 }}>
+    <Box sx={{ 
+      height: '100vh', 
+      backgroundColor: '#f5f7fa', 
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'hidden' 
+    }}>
+      {/* 头部导航 - 固定位置 */}
+      <Paper elevation={1} sx={{ 
+        p: 2, 
+        backgroundColor: 'white', 
+        borderRadius: 0,
+        zIndex: 1000,
+        flexShrink: 0
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <IconButton onClick={onBack} sx={{ mr: 1 }}>
@@ -232,8 +244,28 @@ const ConsensusResultComponent: React.FC<ConsensusResultProps> = ({ data, onBack
         </Box>
       </Paper>
 
-      {/* 主要内容 */}
-      <Box sx={{ px: 2, pt: 2 }}>
+      {/* 可滚动的主要内容区域 */}
+      <Box sx={{ 
+        flex: 1,
+        overflow: 'auto',
+        px: 2, 
+        pt: 2,
+        pb: 4,
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'rgba(0,0,0,0.1)',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'rgba(255, 90, 94, 0.6)',
+          borderRadius: '3px',
+          '&:hover': {
+            backgroundColor: 'rgba(255, 90, 94, 0.8)',
+          },
+        },
+      }}>
         {/* 标题卡片 */}
         <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
           <CardContent sx={{ textAlign: 'center', py: 3 }}>

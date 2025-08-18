@@ -1171,6 +1171,11 @@ export class BattleScene extends Phaser.Scene {
   private showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
     
+    // 重置当前角色的缩放，防止悬停状态的放大效果保持
+    if (this.characterSprites[characterIndex] && this.characterSprites[characterIndex].scene) {
+      this.characterSprites[characterIndex].setScale(1.0);
+    }
+    
     // 获取角色配置
     const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
     
@@ -1237,7 +1242,7 @@ export class BattleScene extends Phaser.Scene {
     // 标题
     const titleText = this.add.text(this.scale.width / 2, modalY + 30, 
       `玩家${characterIndex + 1} 装备详情`, {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.045}px`,
       color: '#FFD700',
       fontStyle: 'bold',
       align: 'center',
@@ -1252,7 +1257,7 @@ export class BattleScene extends Phaser.Scene {
         // 装备名称
         const nameText = this.add.text(modalX + 20, yOffset, 
           `🎒 ${item.name}`, {
-          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.038}px`,
           color: '#ffffff',
           fontStyle: 'bold',
         });
@@ -1261,7 +1266,7 @@ export class BattleScene extends Phaser.Scene {
         // 装备描述
         const descText = this.add.text(modalX + 20, yOffset + 25, 
           item.description, {
-          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.022}px`,
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.032}px`,
           color: '#CCCCCC',
         });
         equipmentTexts.push(descText);
@@ -1280,7 +1285,7 @@ export class BattleScene extends Phaser.Scene {
 
         const valueTextObj = this.add.text(modalX + 20, yOffset + 45, 
           valueText, {
-          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.020}px`,
+          fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.030}px`,
           color: '#90EE90',
           wordWrap: { width: modalWidth - 60, useAdvancedWrap: true }
         });
@@ -1293,7 +1298,7 @@ export class BattleScene extends Phaser.Scene {
     // 关闭按钮
     const closeButton = this.add.text(this.scale.width / 2, modalY + modalHeight - 40,
       '点击任意处关闭', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
       color: '#FFD700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
