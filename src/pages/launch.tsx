@@ -518,6 +518,10 @@ const LaunchPage: React.FC = () => {
                 <CharacterCreator
                   onCharacterCreated={handleCharacterCreated}
                   onBack={handleBackToRoom}
+                  consensusTheme={{
+                    title: consensusGoal.title,
+                    description: consensusGoal.description
+                  }}
                 />
               </Box>
             </Box>
