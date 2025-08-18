@@ -108,7 +108,7 @@ export class KimiAPI {
     }
   }
 
-  // 生成冲突预测和解决题目 - 增强版本，支持装备数据智能分析
+  // 生成冲突预测和解决题目 - 简化版本，直接让AI分析
   async generateConflictQuestions(scenario: {
     title: string;
     description: string;
@@ -128,62 +128,39 @@ export class KimiAPI {
   }>> {
     try {
       const startTime = Date.now();
-      console.log('🚀 开始增强型冲突预测题目生成，场景数据:', scenario);
-
-      // 1. 智能选择相关的冲突场景模板
-      const scenarioType = (scenario.scenarioType as 'friends' | 'family' | 'couples' | 'team' | 'general') || 'general';
-      const relevantScenarios = ConflictPrompts.getRelevantScenarios(scenarioType);
-      console.log('🧠 选择的冲突场景模板:', relevantScenarios.map(s => s.title));
-
-      // 2. 选择最适合的冲突场景
-      const selectedScenario = relevantScenarios.length > 0 ? relevantScenarios[0] : ConflictPrompts.CONFLICT_SCENARIOS.preference_planning;
-      console.log('🎯 选定的主要冲突场景:', selectedScenario.title);
+      console.log('🚀 开始AI冲突预测题目生成，场景数据:', scenario);
 
       let questionPrompt: string;
       let systemPrompt: string;
 
-      // 3. 根据是否有装备数据选择不同的生成策略
+      // 直接根据是否有装备数据选择prompt
       if (scenario.playersEquipment && scenario.playersEquipment.length >= 2) {
-        console.log('⚡ 启用装备感知模式，分析玩家装备配置冲突');
+        console.log('⚡ 启用装备感知模式');
         
-        // 使用装备感知的增强分析
-        questionPrompt = ConflictPrompts.generateComprehensiveConflictAnalysis(
-          selectedScenario,
+        // 简化的装备感知prompt
+        questionPrompt = ConflictPrompts.generateEquipmentAwareConflictQuestions(
+          { id: 'generic', title: scenario.title, description: scenario.description, category: 'preference', difficulty: 3, conflictReasons: [], tags: [] },
           scenario.playersEquipment
         );
         
-        systemPrompt = `你是专业的${scenarioType === 'friends' ? '朋友聚会' : 
-                                     scenarioType === 'family' ? '家庭活动' : 
-                                     scenarioType === 'couples' ? '情侣约会' : 
-                                     scenarioType === 'team' ? '团队协作' : '通用共识'}冲突解决专家。
+        systemPrompt = `你是共识达成专家。请根据玩家装备配置的差异，生成5个具体的协调问题。每个问题都要针对实际的装备冲突点，帮助玩家达成共识。`;
 
-你具备以下专业能力：
-1. 深度分析玩家装备配置中的潜在冲突点
-2. 基于预算、时间、偏好数据生成精准的协调问题
-3. 提供实用的、可操作的冲突解决方案
-4. 根据装备冲突严重程度调整问题难度
-
-请严格按照要求生成JSON格式的问题，确保每个问题都针对具体的装备配置冲突。`;
-
-        console.log('🔍 装备冲突分析:', scenario.playersEquipment.map(p => `玩家${p.playerId}：预算¥${p.budgetAmulet.range?.[0]}-${p.budgetAmulet.range?.[1]}`));
+        console.log('🔍 装备数据:', scenario.playersEquipment.map(p => `玩家${p.playerId}：预算¥${p.budgetAmulet.range?.[0]}-${p.budgetAmulet.range?.[1]}`));
       } else {
-        console.log('📝 使用标准模式，基于场景类型生成题目');
+        console.log('📝 使用通用模式');
         
-        // 使用标准的冲突分析
-        const conflictAnalysis = {
-          conflictType: selectedScenario.conflictReasons[0] || '偏好差异',
-          severity: selectedScenario.difficulty,
-          commonGround: ['共同目标', '基本共识'],
-          differences: selectedScenario.conflictReasons,
-          recommendations: ['开放沟通', '寻找平衡点']
-        };
+        // 简化的通用prompt
+        questionPrompt = `
+场景：${scenario.title} - ${scenario.description}
 
-        questionPrompt = ConflictPrompts.generateConflictQuestions(conflictAnalysis, selectedScenario);
+请生成5个选择题来帮助参与者在这个场景中协调分歧、达成共识。
+
+IMPORTANT: 必须严格按照以下JSON格式返回，不要包含任何其他文字、解释或markdown标记：
+
+[{"id":"conflict_1","type":"choice","question":"具体的协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":0,"explanation":"简短解释","category":"general"},{"id":"conflict_2","type":"choice","question":"另一个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":1,"explanation":"简短解释","category":"general"},{"id":"conflict_3","type":"choice","question":"第三个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":2,"explanation":"简短解释","category":"general"},{"id":"conflict_4","type":"choice","question":"第四个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":1,"explanation":"简短解释","category":"general"},{"id":"conflict_5","type":"choice","question":"第五个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":3,"explanation":"简短解释","category":"general"}]
+`.trim();
         
-        systemPrompt = `你是${scenarioType === 'friends' ? '朋友聚会' : 
-                               scenarioType === 'family' ? '家庭活动' : 
-                               scenarioType === 'couples' ? '情侣约会' : 
-                               scenarioType === 'team' ? '团队协作' : '通用共识'}冲突解决专家，擅长预测和化解群体决策中的分歧。`;
+        systemPrompt = `你是共识达成专家，擅长预测和化解群体决策中的分歧。请生成实用的协调问题。`;
       }
 
       console.log('📝 生成的问题prompt长度:', questionPrompt.length, '字符');
@@ -219,29 +196,54 @@ export class KimiAPI {
         throw new Error(data.message || '冲突题目生成失败');
       }
 
-      // 5. 解析AI返回的JSON格式题目
+      // 5. 解析AI返回的JSON格式题目 - 简化版本，期待标准格式
       try {
-        const jsonMatch = data.response.match(/\[[^\]]*\]/);
-        if (jsonMatch) {
-          const questions = JSON.parse(jsonMatch[0]);
-          // 只返回选择题（过滤掉其他类型）
-          const choiceQuestions = questions.filter((q: any) => q.type === 'choice').slice(0, 5);
-          console.log('🎯 解析出的增强题目数量:', choiceQuestions.length);
-          
-          if (choiceQuestions.length > 0) {
-            console.log('💡 题目预览:', choiceQuestions.map((q: any) => q.question.substring(0, 30) + '...'));
-            return choiceQuestions;
+        console.log('🔍 AI响应长度:', data.response.length, '字符');
+        
+        // 直接尝试解析，因为我们已经要求AI返回标准JSON格式
+        let jsonString = data.response.trim();
+        
+        // 移除可能的markdown标记
+        jsonString = jsonString.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        
+        // 如果响应不是以[开始，寻找JSON数组
+        if (!jsonString.startsWith('[')) {
+          const startIndex = jsonString.indexOf('[');
+          const endIndex = jsonString.lastIndexOf(']');
+          if (startIndex !== -1 && endIndex !== -1) {
+            jsonString = jsonString.substring(startIndex, endIndex + 1);
           } else {
-            console.warn('⚠️ 没有解析出有效的选择题，使用默认题目');
-            return this.getDefaultConflictQuestions();
+            throw new Error('未找到JSON数组格式');
           }
+        }
+        
+        console.log('📝 解析JSON字符串，长度:', jsonString.length);
+        
+        const questions = JSON.parse(jsonString);
+        
+        if (!Array.isArray(questions)) {
+          throw new Error('解析结果不是数组');
+        }
+        
+        // 基本验证和清理
+        const validQuestions = questions.filter((q: any) => {
+          return q && q.question && q.options && Array.isArray(q.options) && q.options.length >= 2;
+        }).slice(0, 5);
+        
+        console.log('🎯 解析出的题目数量:', validQuestions.length);
+        
+        if (validQuestions.length > 0) {
+          console.log('💡 题目预览:', validQuestions.map((q: any) => q.question.substring(0, 30) + '...'));
+          return validQuestions;
         } else {
-          console.warn('⚠️ AI返回格式不正确，使用默认题目');
+          console.warn('⚠️ 没有有效题目，使用默认题目');
           return this.getDefaultConflictQuestions();
         }
+        
       } catch (parseError) {
-        console.error('❌ 解析AI返回结果失败:', parseError);
-        console.log('🔍 原始AI响应:', data.response.substring(0, 500) + '...');
+        console.error('❌ JSON解析失败:', parseError);
+        console.log('🔍 AI原始响应:', data.response.substring(0, 500) + '...');
+        console.warn('⚠️ 使用默认题目');
         return this.getDefaultConflictQuestions();
       }
     } catch (error) {

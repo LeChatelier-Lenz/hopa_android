@@ -330,69 +330,45 @@ export class LoadingScene extends Phaser.Scene {
     }
   }
 
-  // 从玩家配置中提取装备数据
+  // 从玩家配置中提取装备数据（直接使用AI生成的配置，无需默认值）
   private extractPlayerEquipment(playerId: string, playerConfig: any): any | null {
     try {
-      // 构造标准装备数据格式
+      // 直接使用玩家配置中的装备信息（已由AI在前端生成）
+      if (!playerConfig.equipment) {
+        console.warn(`⚠️ 玩家${playerId}缺少装备配置，跳过`);
+        return null;
+      }
+
+      const equipment = playerConfig.equipment;
       const equipmentData = {
         playerId: playerId,
         budgetAmulet: {
-          enabled: true,
-          range: [500, 2000] as [number, number], // 默认预算范围
+          enabled: equipment.budgetAmulet?.enabled || false,
+          range: equipment.budgetAmulet?.range || [300, 1000],
           name: '预算护符',
           description: '控制消费范围'
         },
         timeCompass: {
-          enabled: true,
-          duration: 'full-day', // 默认全天
+          enabled: equipment.timeCompass?.enabled || false,
+          duration: equipment.timeCompass?.duration || 'full-day',
           name: '时间指南针',
           description: '规划活动时长'
         },
         attractionShield: {
-          enabled: true,
-          preferences: ['热门景点', '文化古迹'], // 默认景点偏好
+          enabled: equipment.attractionShield?.enabled || false,
+          preferences: equipment.attractionShield?.preferences || [],
           name: '景点盾牌',
           description: '发现精彩目的地'
         },
         cuisineGem: {
-          enabled: true,
-          types: ['当地特色菜', '小吃'], // 默认美食偏好
+          enabled: equipment.cuisineGem?.enabled || false,
+          types: equipment.cuisineGem?.types || [],
           name: '美食宝珠',
           description: '探索当地美食文化'
         }
       };
 
-      // 如果玩家配置中有装备信息，尝试使用实际数据
-      if (playerConfig.equipment) {
-        const equipment = playerConfig.equipment;
-        
-        // 预算护符数据
-        if (equipment.budgetAmulet?.enabled) {
-          equipmentData.budgetAmulet.range = equipment.budgetAmulet.range || [500, 2000];
-        }
-        
-        // 时间罗盘数据
-        if (equipment.timeCompass?.enabled) {
-          equipmentData.timeCompass.duration = equipment.timeCompass.duration || 'full-day';
-        }
-        
-        // 景点盾牌数据
-        if (equipment.attractionShield?.enabled && equipment.attractionShield.preferences) {
-          equipmentData.attractionShield.preferences = equipment.attractionShield.preferences;
-        }
-        
-        // 美食宝石数据
-        if (equipment.cuisineGem?.enabled && equipment.cuisineGem.types) {
-          equipmentData.cuisineGem.types = equipment.cuisineGem.types;
-        }
-      }
-
-      // 根据共识主题智能调整装备配置
-      if (this.gameData?.consensusTheme) {
-        this.adjustEquipmentByTheme(equipmentData, this.gameData.consensusTheme);
-      }
-
-      console.log(`🎒 玩家${playerId}装备数据:`, {
+      console.log(`🎒 玩家${playerId}装备数据 (AI生成):`, {
         budget: `¥${equipmentData.budgetAmulet.range[0]}-${equipmentData.budgetAmulet.range[1]}`,
         time: equipmentData.timeCompass.duration,
         attractions: equipmentData.attractionShield.preferences.join(', '),
@@ -406,46 +382,8 @@ export class LoadingScene extends Phaser.Scene {
     }
   }
 
-  // 根据共识主题智能调整装备配置
-  private adjustEquipmentByTheme(equipmentData: any, theme: { title: string; description: string }) {
-    const themeText = (theme.title + ' ' + theme.description).toLowerCase();
-    
-    // 根据主题调整预算范围
-    if (themeText.includes('高端') || themeText.includes('奢华') || themeText.includes('豪华')) {
-      equipmentData.budgetAmulet.range = [1500, 5000];
-    } else if (themeText.includes('经济') || themeText.includes('省钱') || themeText.includes('便宜')) {
-      equipmentData.budgetAmulet.range = [200, 800];
-    } else if (themeText.includes('中档') || themeText.includes('适中')) {
-      equipmentData.budgetAmulet.range = [600, 1500];
-    }
-    
-    // 根据主题调整时间偏好
-    if (themeText.includes('半天') || themeText.includes('短时间')) {
-      equipmentData.timeCompass.duration = 'half-day';
-    } else if (themeText.includes('全天') || themeText.includes('一整天')) {
-      equipmentData.timeCompass.duration = 'full-day';
-    }
-    
-    // 根据主题调整景点偏好
-    if (themeText.includes('自然') || themeText.includes('风景') || themeText.includes('户外')) {
-      equipmentData.attractionShield.preferences = ['自然风光', '公园绿地', '山川湖泊'];
-    } else if (themeText.includes('文化') || themeText.includes('历史') || themeText.includes('博物馆')) {
-      equipmentData.attractionShield.preferences = ['文化古迹', '博物馆', '历史建筑'];
-    } else if (themeText.includes('购物') || themeText.includes('商场')) {
-      equipmentData.attractionShield.preferences = ['购物中心', '商业区', '特色市场'];
-    }
-    
-    // 根据主题调整美食偏好
-    if (themeText.includes('日式') || themeText.includes('日本料理')) {
-      equipmentData.cuisineGem.types = ['日本料理', '寿司', '拉面'];
-    } else if (themeText.includes('中式') || themeText.includes('中餐')) {
-      equipmentData.cuisineGem.types = ['中餐', '川菜', '粤菜'];
-    } else if (themeText.includes('西式') || themeText.includes('西餐')) {
-      equipmentData.cuisineGem.types = ['西餐', '意大利菜', '法式料理'];
-    } else if (themeText.includes('小吃') || themeText.includes('街边美食')) {
-      equipmentData.cuisineGem.types = ['街边小吃', '当地特色', '夜市美食'];
-    }
-  }
+  // 备注：装备配置调整已迁移到前端AI生成系统
+  // 详见 src/utils/equipmentAI.ts 和 CharacterCreator.tsx
 
   private getDefaultQuestions(): ConflictQuestion[] {
     return [

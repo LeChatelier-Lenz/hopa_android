@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import {
   NavigateBefore,
@@ -32,7 +33,9 @@ import {
   LocationOn,
   Restaurant,
   Person,
+  AutoAwesome,
 } from '@mui/icons-material';
+import EquipmentAI, { type AIEquipmentOptions } from '../prompts/equipmentAI';
 
 // 角色数据类型
 interface Character {
@@ -96,34 +99,26 @@ const characterOptions: Character[] = [
   },
 ];
 
-// 西湖景点选项
-const attractionOptions = [
-  '雷峰塔',
-  '苏堤',
-  '断桥残雪',
-  '西湖音乐喷泉',
-  '三潭印月',
-  '平湖秋月',
-  '柳浪闻莺',
-  '花港观鱼',
+// 备用选项（仅在AI生成失败时使用）
+const fallbackAttractionOptions = [
+  '热门景点',
+  '文化场所',
+  '休闲娱乐',
+  '自然风光',
 ];
 
-// 餐饮类型选项
-const cuisineOptions = [
-  '杭帮菜',
-  '网红店',
+const fallbackCuisineOptions = [
+  '当地美食',
   '特色小吃',
-  '西湖醋鱼',
-  '东坡肉',
-  '龙井虾仁',
-  '咖啡厅',
-  '茶餐厅',
+  '传统料理',
+  '现代餐厅',
 ];
 
 interface CharacterCreatorProps {
   onCharacterCreated: (config: CharacterConfig) => void;
   onBack?: () => void;
   initialConfig?: CharacterConfig;
+  consensusTheme?: { title: string; description: string }; // 从主题界面传入
 }
 
 // 装备槽位组件
@@ -199,10 +194,15 @@ const EquipmentSlot: React.FC<EquipmentSlotProps> = ({ icon, name, enabled, onCl
 const CharacterCreator: React.FC<CharacterCreatorProps> = ({ 
   onCharacterCreated, 
   onBack,
-  initialConfig 
+  initialConfig,
+  consensusTheme
 }) => {
   const [selectedCharacterIndex, setSelectedCharacterIndex] = useState(0);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
+  const [aiEquipmentOptions, setAiEquipmentOptions] = useState<AIEquipmentOptions | null>(null);
+  const [isGeneratingEquipment, setIsGeneratingEquipment] = useState(false);
+  const [attractionOptions, setAttractionOptions] = useState(fallbackAttractionOptions);
+  const [cuisineOptions, setCuisineOptions] = useState(fallbackCuisineOptions);
   const [config, setConfig] = useState<CharacterConfig>(() => {
     // 优先使用传入的配置，其次是localStorage，最后是默认配置
     if (initialConfig) return initialConfig;
@@ -230,11 +230,11 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
         },
         attractionShield: {
           enabled: true,
-          preferences: [attractionOptions[0], attractionOptions[1]],
+          preferences: [fallbackAttractionOptions[0]],
         },
         cuisineGem: {
           enabled: true,
-          types: [cuisineOptions[0]],
+          types: [fallbackCuisineOptions[0]],
         },
       },
     };
@@ -247,6 +247,69 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
       setSelectedCharacterIndex(index);
     }
   }, [config.character.id]);
+
+  // 当有共识主题时，自动生成AI装备选项
+  useEffect(() => {
+    if (consensusTheme && !aiEquipmentOptions && !isGeneratingEquipment) {
+      generateAIEquipmentOptions();
+    }
+  }, [consensusTheme]);
+
+  // AI装备选项生成
+  const generateAIEquipmentOptions = async () => {
+    if (!consensusTheme) {
+      console.warn('⚠️ 没有共识主题，跳过AI装备生成');
+      return;
+    }
+
+    setIsGeneratingEquipment(true);
+    try {
+      console.log('🤖 开始为主题生成AI装备选项:', consensusTheme);
+      
+      const options = await EquipmentAI.generateEquipmentOptions(consensusTheme);
+      console.log('✅ AI装备选项生成成功:', options);
+      
+      setAiEquipmentOptions(options);
+      
+      // 更新装备选项
+      console.log('🔄 更新界面选项，景点:', options.attractions, '美食:', options.cuisines);
+      setAttractionOptions(options.attractions);
+      setCuisineOptions(options.cuisines);
+      
+      // 自动更新角色配置的预算和时间
+      setConfig(prev => ({
+        ...prev,
+        equipment: {
+          ...prev.equipment,
+          budgetAmulet: {
+            ...prev.equipment.budgetAmulet,
+            range: [options.budget.min, options.budget.max],
+          },
+          timeCompass: {
+            ...prev.equipment.timeCompass,
+            duration: options.timePreference,
+          },
+          // 默认选择前几个AI推荐的选项
+          attractionShield: {
+            ...prev.equipment.attractionShield,
+            preferences: options.attractions.slice(0, 2),
+          },
+          cuisineGem: {
+            ...prev.equipment.cuisineGem,
+            types: options.cuisines.slice(0, 1),
+          },
+        },
+      }));
+
+      console.log('✅ AI装备选项生成完成:', options);
+      
+    } catch (error) {
+      console.error('❌ AI装备选项生成失败:', error);
+      // 失败时使用默认选项
+    } finally {
+      setIsGeneratingEquipment(false);
+    }
+  };
 
   // 角色选择处理
   const handleCharacterSelect = (direction: 'prev' | 'next') => {
@@ -287,15 +350,23 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
   const handleReset = () => {
     localStorage.removeItem('hopaCharacterConfig');
     setSelectedCharacterIndex(0);
+    setAiEquipmentOptions(null);
+    setAttractionOptions(fallbackAttractionOptions);
+    setCuisineOptions(fallbackCuisineOptions);
     setConfig({
       character: characterOptions[0],
       equipment: {
         budgetAmulet: { enabled: true, range: [100, 300] },
         timeCompass: { enabled: true, duration: 'full-day' },
-        attractionShield: { enabled: true, preferences: [attractionOptions[0]] },
-        cuisineGem: { enabled: true, types: [cuisineOptions[0]] },
+        attractionShield: { enabled: true, preferences: [fallbackAttractionOptions[0]] },
+        cuisineGem: { enabled: true, types: [fallbackCuisineOptions[0]] },
       },
     });
+    
+    // 如果有主题，重新生成AI装备
+    if (consensusTheme) {
+      generateAIEquipmentOptions();
+    }
   };
 
   return (
@@ -382,14 +453,62 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
       </Paper>
 
       {/* 装备背包区域 */}
-      <Typography variant="h5" gutterBottom sx={{ 
-        fontWeight: 600, 
-        color: '#333',
-        mb: 3,
-        textAlign: 'center'
-      }}>
-        🎒 西湖约会装备背包
-      </Typography>
+      <Box sx={{ textAlign: 'center', mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ 
+          fontWeight: 600, 
+          color: '#333',
+          mb: 1
+        }}>
+          🎒 共识征程装备背包
+        </Typography>
+        
+        {/* AI生成状态指示 */}
+        {consensusTheme && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
+            {isGeneratingEquipment ? (
+              <>
+                <CircularProgress size={20} sx={{ color: '#ff5a5e' }} />
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  AI正在为"{consensusTheme.title}"生成专属装备选项...
+                </Typography>
+              </>
+            ) : aiEquipmentOptions ? (
+              <>
+                <AutoAwesome sx={{ color: '#ff5a5e', fontSize: 20 }} />
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  AI已为"{consensusTheme.title}"生成专属装备选项
+                </Typography>
+                <Button 
+                  size="small" 
+                  onClick={generateAIEquipmentOptions}
+                  sx={{ color: '#ff5a5e', minWidth: 'auto', p: 0.5 }}
+                >
+                  重新生成
+                </Button>
+              </>
+            ) : consensusTheme && (
+              <>
+                <AutoAwesome sx={{ color: '#999', fontSize: 20 }} />
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  将为"{consensusTheme.title}"生成专属装备选项
+                </Typography>
+              </>
+            )}
+          </Box>
+        )}
+        
+        {/* AI推理说明 */}
+        {aiEquipmentOptions?.reasoning && (
+          <Typography variant="caption" sx={{ 
+            color: '#666', 
+            fontStyle: 'italic',
+            display: 'block',
+            mb: 1
+          }}>
+            💡 {aiEquipmentOptions.reasoning}
+          </Typography>
+        )}
+      </Box>
 
       {/* 背包网格 */}
       <Paper elevation={3} sx={{ 

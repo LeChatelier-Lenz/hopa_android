@@ -564,18 +564,9 @@ ${equipmentSummary}
 
 请根据玩家的装备配置差异，生成5个选择题来帮助他们协调冲突、达成共识。
 
-返回JSON格式：
-[
-  {
-    "id": "conflict_1",
-    "type": "choice", 
-    "question": "具体的协调问题",
-    "options": ["选项A", "选项B", "选项C", "选项D"],
-    "correctAnswer": 0,
-    "explanation": "简短解释",
-    "category": "budget"
-  }
-]
+IMPORTANT: 必须严格按照以下JSON格式返回，不要包含任何其他文字、解释或markdown标记：
+
+[{"id":"conflict_1","type":"choice","question":"具体的协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":0,"explanation":"简短解释","category":"budget"},{"id":"conflict_2","type":"choice","question":"另一个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":1,"explanation":"简短解释","category":"time"},{"id":"conflict_3","type":"choice","question":"第三个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":2,"explanation":"简短解释","category":"attraction"},{"id":"conflict_4","type":"choice","question":"第四个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":1,"explanation":"简短解释","category":"cuisine"},{"id":"conflict_5","type":"choice","question":"第五个协调问题","options":["选项A","选项B","选项C","选项D"],"correctAnswer":3,"explanation":"简短解释","category":"general"}]
 `.trim();
   }
 
