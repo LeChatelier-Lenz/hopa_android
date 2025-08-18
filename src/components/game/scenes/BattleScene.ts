@@ -57,6 +57,7 @@ export class BattleScene extends Phaser.Scene {
   private optionTexts: Phaser.GameObjects.Text[] = [];
   private healthBars: { [key: string]: Phaser.GameObjects.Graphics } = {};
   private backgroundMusic?: Phaser.Sound.BaseSound;
+  private characterSprites: Phaser.GameObjects.Image[] = []; // 存储角色图片引用
 
   constructor() {
     super({ key: 'BattleScene' });
@@ -119,6 +120,12 @@ export class BattleScene extends Phaser.Scene {
     this.load.image('equipment_key', '/src/assets/game/equipment/Key.jpg');
     this.load.image('equipment_magic_bar', '/src/assets/game/equipment/magic_bar.jpg');
     this.load.image('equipment_ring', '/src/assets/game/equipment/ring.jpg');
+    
+    // 加载新的UI界面图片
+    this.load.image('question_box', '/src/assets/game/ui/Battle-Interface- Question-Box.png');
+    this.load.image('monster_appearance', '/src/assets/game/monsters/Monster-is-Making-its-Appearance.png');
+    this.load.image('calendar_btn', '/src/assets/game/ui/calendar.png');
+    this.load.image('save_btn', '/src/assets/game/ui/save.png');
   }
 
   create() {
@@ -179,6 +186,50 @@ export class BattleScene extends Phaser.Scene {
       strokeThickness: 3,
     }).setOrigin(0.5);
     titleText.setResolution(window.devicePixelRatio || 1);
+    
+    // 添加功能按钮
+    this.createFunctionButtons();
+  }
+
+  private createFunctionButtons() {
+    const buttonSize = Math.min(this.scale.width, this.scale.height) * 0.08;
+    const buttonY = this.scale.height * 0.08;
+    
+    // 日历按钮（左上角）
+    const calendarBtn = this.add.image(this.scale.width * 0.1, buttonY, 'calendar_btn');
+    calendarBtn.setDisplaySize(buttonSize, buttonSize * 0.37); // 按原图比例调整
+    calendarBtn.setInteractive();
+    calendarBtn.on('pointerdown', () => this.showGameInfo());
+    calendarBtn.on('pointerover', () => calendarBtn.setScale(1.1));
+    calendarBtn.on('pointerout', () => calendarBtn.setScale(1.0));
+    
+    // 保存按钮（右上角）
+    const saveBtn = this.add.image(this.scale.width * 0.9, buttonY, 'save_btn');
+    saveBtn.setDisplaySize(buttonSize, buttonSize * 0.37); // 按原图比例调整
+    saveBtn.setInteractive();
+    saveBtn.on('pointerdown', () => this.saveGameProgress());
+    saveBtn.on('pointerover', () => saveBtn.setScale(1.1));
+    saveBtn.on('pointerout', () => saveBtn.setScale(1.0));
+  }
+  
+  private showGameInfo() {
+    const info = `🎯 当前进度: 第${this.currentQuestionIndex + 1}题\n📊 已收集共识: ${this.consensusResults.length}个\n🎮 剩余怪物血量: ${this.monsters[0]?.getHealth() || 0}`;
+    this.showFeedback(info);
+  }
+  
+  private saveGameProgress() {
+    // 简单的进度保存提示
+    this.showFeedback('游戏进度已保存到本地存储 💾');
+    
+    // 实际保存逻辑
+    const gameState = {
+      currentQuestionIndex: this.currentQuestionIndex,
+      consensusResults: this.consensusResults,
+      monsterHealth: this.monsters[0]?.getHealth() || 0,
+      timestamp: Date.now()
+    };
+    
+    localStorage.setItem('hopa_battle_progress', JSON.stringify(gameState));
   }
 
   private setupCharacters() {
@@ -217,6 +268,9 @@ export class BattleScene extends Phaser.Scene {
       charSprite.on('pointerdown', () => this.showEquipmentDetails(i));
       charSprite.on('pointerover', () => charSprite.setScale(1.05));
       charSprite.on('pointerout', () => charSprite.setScale(1.0));
+      
+      // 存储角色图片引用
+      this.characterSprites.push(charSprite);
       
       // 创建角色对象
       const characterConfig = i === 0 ? this.gameData.player1Config : this.gameData.player2Config;
@@ -266,13 +320,12 @@ export class BattleScene extends Phaser.Scene {
     const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
     monsterSprite.setDisplaySize(monsterSize, monsterSize);
     
-    // 根据题目总数设置怪物血量：AI题目(7个) + 固定题目(1个) = 8题总计
-    const aiQuestionCount = 7; // 固定AI题目数量
-    const fixedQuestionCount = 1; // 固定备用题目数量
-    const totalQuestionCount = aiQuestionCount + fixedQuestionCount;
-    const totalHealth = totalQuestionCount * 60; // 每题60血量，8题共480血量
+    // 根据AI生成的题目总数设置怪物血量
+    const aiQuestionCount = this.gameData?.conflictQuestions?.length || 7; // 实际AI题目数量
+    const totalQuestionCount = aiQuestionCount; // 只使用AI题目
+    const totalHealth = totalQuestionCount * 60; // 每题60血量
     
-    console.log(`🎯 设置怪物血量: AI题目${aiQuestionCount}个 + 固定题目${fixedQuestionCount}个 = 总计${totalQuestionCount}题，血量${totalHealth}`);
+    console.log(`🎯 设置怪物血量: AI题目${aiQuestionCount}个，总血量${totalHealth}`);
     
     // 创建怪物对象（用于逻辑）
     const monsterData: MonsterConfig = {
@@ -292,6 +345,23 @@ export class BattleScene extends Phaser.Scene {
     
     // 创建怪物血条
     this.createHealthBar('consensus_monster', monsterX, monsterY - monsterSize/2 - 30);
+    
+    // 添加怪物登场文字效果
+    const appearanceText = this.add.image(monsterX, monsterY - monsterSize/2 - 80, 'monster_appearance');
+    appearanceText.setDisplaySize(200, 40); // 调整大小适应界面
+    
+    // 添加登场动画效果
+    appearanceText.setAlpha(0);
+    this.tweens.add({
+      targets: appearanceText,
+      alpha: 1,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 1000,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Bounce.easeOut'
+    });
     
     // 添加怪物名称 - 调整位置避免与标题重叠
     const monsterNameText = this.add.text(monsterX, monsterY - monsterSize/2 - 50, '共识守护兽', {
@@ -352,30 +422,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createUI() {
-    // 创建底部题目显示框 - 缩小高度，上移位置
-    const bottomFrameHeight = this.scale.height * 0.32; // 占屏幕高度的32%
+    // 创建底部题目显示框 - 使用新的问题框图片
+    const bottomFrameHeight = this.scale.height * 0.35; // 稍微增加高度适应新图片
     const bottomFrameY = this.scale.height - bottomFrameHeight;
     
-    // 底部框背景
-    const bottomFrame = this.add.graphics();
-    bottomFrame.fillStyle(0x2E3F4F, 0.95); // 深蓝灰色，半透明
-    bottomFrame.fillRoundedRect(
-      this.scale.width * 0.05, 
-      bottomFrameY + this.scale.height * 0.02, 
-      this.scale.width * 0.9, 
-      bottomFrameHeight - this.scale.height * 0.04, 
-      20
-    );
-    
-    // 底部框边框
-    bottomFrame.lineStyle(3, 0xFFD700, 1); // 金色边框
-    bottomFrame.strokeRoundedRect(
-      this.scale.width * 0.05, 
-      bottomFrameY + this.scale.height * 0.02, 
-      this.scale.width * 0.9, 
-      bottomFrameHeight - this.scale.height * 0.04, 
-      20
-    );
+    // 使用新的问题框背景图片
+    const questionBoxBg = this.add.image(this.scale.width / 2, bottomFrameY + bottomFrameHeight / 2, 'question_box');
+    questionBoxBg.setDisplaySize(this.scale.width * 0.9, bottomFrameHeight - this.scale.height * 0.04);
+    questionBoxBg.setAlpha(0.95); // 稍微透明以提高可读性
 
     // 创建问题显示区域 - 位于底部框内，增大字体并确保换行
     const questionY = bottomFrameY + this.scale.height * 0.06;
@@ -458,32 +512,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private generateQuestion() {
-    // 优先使用AI生成的冲突问题，但最多使用7个
+    // 完全使用AI生成的冲突问题
     if (this.gameData?.conflictQuestions && this.gameData.conflictQuestions.length > 0) {
-      // 如果还有AI题目且未超过7个，使用下一个AI题目
-      if (this.currentQuestionIndex < Math.min(this.gameData.conflictQuestions.length, 7)) {
+      // 如果还有AI题目，继续使用
+      if (this.currentQuestionIndex < this.gameData.conflictQuestions.length) {
         this.currentQuestion = this.gameData.conflictQuestions[this.currentQuestionIndex];
         this.currentQuestionIndex++;
-        console.log(`🤖 使用AI题目 ${this.currentQuestionIndex}/7:`, this.currentQuestion?.question);
+        console.log(`🤖 使用AI题目 ${this.currentQuestionIndex}/${this.gameData.conflictQuestions.length}:`, this.currentQuestion?.question);
         return;
       }
     }
     
-    // AI题目用完后，使用最重要的固定题目（沟通相关）
-    const mostImportantQuestion: Question = {
-      id: 'communication_core',
-      text: '遇到意见分歧时，你们通常如何沟通？',
-      options: [
-        '开诚布公直接讨论',
-        '先冷静再慢慢商量',
-        '找第三方协调',
-        '各自妥协一点'
-      ],
-      category: 'communication'
-    };
-
-    this.currentQuestion = mostImportantQuestion;
-    console.log('📋 使用核心固定题目(沟通):', this.currentQuestion?.text);
+    // 如果AI题目用完，战斗应该结束
+    console.log('✅ 所有AI题目已完成，战斗即将结束');
+    // 设置一个特殊状态表示题目已用完
+    this.currentQuestion = null;
   }
 
   private displayQuestion() {
@@ -979,7 +1022,8 @@ export class BattleScene extends Phaser.Scene {
       consistency = this.player1Answer === this.player2Answer ? 1.0 : 0.5;
     }
     
-    const damage = Math.floor(consistency * 30 + Math.random() * 20); // 30-50伤害
+    // 固定伤害机制：每题造成60点固定伤害，确保所有题目完成后boss被击败
+    const damage = 60;
     
     // 记录共识结果
     const questionText = ('question' in this.currentQuestion) ? this.currentQuestion.question : this.currentQuestion.text || '';
@@ -1123,6 +1167,11 @@ export class BattleScene extends Phaser.Scene {
   // 显示装备详情
   private async showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
+    
+    // 重置所有角色图片的缩放状态
+    this.characterSprites.forEach(sprite => {
+      sprite.setScale(1.0);
+    });
     
     // 获取角色配置
     const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
@@ -1377,6 +1426,13 @@ export class BattleScene extends Phaser.Scene {
     elements.forEach(element => {
       if (element && element.scene) {
         element.destroy();
+      }
+    });
+    
+    // 确保所有角色图片的缩放状态正确
+    this.characterSprites.forEach(sprite => {
+      if (sprite && sprite.scene) {
+        sprite.setScale(1.0);
       }
     });
   }

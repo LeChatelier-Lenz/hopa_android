@@ -70,7 +70,7 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
         },
         render: {
           antialias: true,
-          pixelArt: true,
+          pixelArt: false, // 关闭像素艺术模式，获得更清晰的图像
           powerPreference: 'high-performance', // 使用高性能GPU
           transparent: false,
           clearBeforeRender: true,
@@ -78,6 +78,7 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
           premultipliedAlpha: true,
           failIfMajorPerformanceCaveat: false,
           desynchronized: true, // 减少输入延迟
+          roundPixels: false, // 关闭像素对齐，获得更平滑的渲染
         },
         dom: {
           createContainer: true
@@ -270,7 +271,7 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
             },
             render: {
               antialias: true,
-              pixelArt: true,
+              pixelArt: false, // 关闭像素艺术模式，获得更清晰的图像
               powerPreference: 'high-performance', // 使用高性能GPU
               transparent: false,
               clearBeforeRender: true,
@@ -278,6 +279,7 @@ const PhaserGame: React.FC<PhaserGameProps> = ({ onGameEvent, gameData }) => {
               premultipliedAlpha: true,
               failIfMajorPerformanceCaveat: false,
               desynchronized: true, // 减少输入延迟
+              roundPixels: false, // 关闭像素对齐，获得更平滑的渲染
             },
             dom: {
               createContainer: true

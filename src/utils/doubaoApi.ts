@@ -1,5 +1,6 @@
 // Doubao 文生图模型 API 接口
 import { apiConfig } from '../config/api';
+import { BackgroundPrompts, type BackgroundPromptParams } from '../prompts/backgrounds';
 
 interface DoubaoRequest {
   model: string;
@@ -104,30 +105,46 @@ export class DoubaoAPI {
     }
   }
 
-  // 生成游戏背景图
+  // 生成游戏背景图 - 使用前端prompt生成
   async generateGameBackground(scenario: {
     title: string;
     description: string;
     theme?: string;
     peopleCount?: number;
   }): Promise<string> {
-    const requestBody = {
-      title: scenario.title,
-      description: scenario.description,
-      theme: scenario.theme,
-      peopleCount: scenario.peopleCount,
-    };
-
     try {
       const startTime = Date.now();
-      console.log('🎨 发送背景图生成请求:', requestBody);
+      console.log('🎨 开始生成背景图，场景数据:', scenario);
 
-      const response = await fetch(`${this.backendUrl}/doubao/generate-background`, {
+      // 1. 使用前端prompt系统智能匹配场景参数
+      const promptParams: BackgroundPromptParams = BackgroundPrompts.smartMatch({
+        title: scenario.title,
+        description: scenario.description
+      });
+
+      // 2. 如果有额外参数，覆盖智能匹配结果
+      if (scenario.peopleCount) {
+        promptParams.peopleCount = scenario.peopleCount;
+      }
+      
+      console.log('🧠 智能匹配的prompt参数:', promptParams);
+
+      // 3. 生成优化的背景prompt
+      const backgroundPrompt = BackgroundPrompts.generateBackground(promptParams);
+      console.log('📝 生成的背景prompt:', backgroundPrompt);
+
+      // 4. 调用后端API，传递生成的prompt
+      const response = await fetch(`${this.backendUrl}/doubao/generate-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          prompt: backgroundPrompt,
+          size: '1080x1920',
+          guidance_scale: 4,
+          watermark: false,
+        }),
       });
 
       const endTime = Date.now();

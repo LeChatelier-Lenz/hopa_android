@@ -43,6 +43,11 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   preload() {
+    // 加载新的卡片背景图片
+    this.load.image('card_bg1', '/src/assets/game/ui/card-background1.png');
+    this.load.image('card_bg2', '/src/assets/game/ui/card-background2.png');
+    this.load.image('card_example', '/src/assets/game/ui/card-example.png');
+    
     // 生成二维码内容
     this.generateQRCodeContent();
   }
@@ -77,29 +82,21 @@ export class VictoryScene extends Phaser.Scene {
     // 添加闪烁星星效果
     this.createStarEffect();
 
-    // 创建卡片主体
+    // 创建卡片主体 - 使用新的背景图片
     const cardWidth = this.scale.width * 0.85;
-    const cardHeight = this.scale.height * 0.75;
+    const cardHeight = this.scale.height * 0.8; // 稍微增加高度适应新背景
     const cardX = (this.scale.width - cardWidth) / 2;
     const cardY = (this.scale.height - cardHeight) / 2;
 
-    // 精美卡片背景设计
-    const cardBg = this.add.graphics();
-    
-    // 创建渐变卡片背景
-    cardBg.fillGradientStyle(0xffffff, 0xffffff, 0xf8f9fa, 0xe9ecef, 1);
-    cardBg.fillRoundedRect(cardX, cardY, cardWidth, cardHeight, 20);
-    
-    // 添加双层边框效果
-    cardBg.lineStyle(2, 0x4169E1, 1);
-    cardBg.strokeRoundedRect(cardX, cardY, cardWidth, cardHeight, 20);
-    cardBg.lineStyle(1, 0x87CEEB, 0.6);
-    cardBg.strokeRoundedRect(cardX + 3, cardY + 3, cardWidth - 6, cardHeight - 6, 17);
-    
     // 添加卡片阴影效果
     const shadow = this.add.graphics();
-    shadow.fillStyle(0x000000, 0.1);
-    shadow.fillRoundedRect(cardX + 5, cardY + 5, cardWidth, cardHeight, 20);
+    shadow.fillStyle(0x000000, 0.2);
+    shadow.fillRoundedRect(cardX + 8, cardY + 8, cardWidth, cardHeight, 20);
+
+    // 使用新的卡片背景图片
+    const cardBg = this.add.image(cardX + cardWidth/2, cardY + cardHeight/2, 'card_bg1');
+    cardBg.setDisplaySize(cardWidth, cardHeight);
+    cardBg.setOrigin(0.5);
 
     // 添加入场动画
     cardBg.setScale(0);

@@ -28,7 +28,7 @@ export class LoadingScene extends Phaser.Scene {
   private eventCallback?: (event: string, data?: any) => void;
   private loadingProgress: number = 0;
   private monsterSprite?: Phaser.GameObjects.Image;
-  private monsterMask?: Phaser.GameObjects.Graphics;
+  private lightEffectSprite?: Phaser.GameObjects.Image;
   private loadingText?: Phaser.GameObjects.Text;
   private progressBar?: Phaser.GameObjects.Graphics;
   private generatedQuestions: ConflictQuestion[] = [];
@@ -46,10 +46,9 @@ export class LoadingScene extends Phaser.Scene {
   }
 
   preload() {
-    // 随机加载一个怪兽图片
-    const monsterIndex = Math.floor(Math.random() * 5) + 1;
-    const monsterExtension = monsterIndex === 1 ? 'png' : 'jpg';
-    this.load.image('monster_main', `/src/assets/game/monsters/monster${monsterIndex}.${monsterExtension}`);
+    // 加载新的loading界面图片
+    this.load.image('loading_monster', '/src/assets/game/monsters/loading-monster.png');
+    this.load.image('loading_light', '/src/assets/game/monsters/loading-light.png');
     
     // 加载AI生成的背景图（如果有）- 通过后端代理解决CORS问题
     if (this.gameData?.backgroundUrl) {
@@ -88,16 +87,36 @@ export class LoadingScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 创建怪兽图片（居中偏上，适当缩小）
-    this.monsterSprite = this.add.image(centerX, this.scale.height * 0.4, 'monster_main');
+    // 创建光环特效（背景层，稍大尺寸）
+    this.lightEffectSprite = this.add.image(centerX, this.scale.height * 0.4, 'loading_light');
+    const lightSize = Math.min(this.scale.width, this.scale.height) * 0.35;
+    this.lightEffectSprite.setDisplaySize(lightSize, lightSize);
+    this.lightEffectSprite.setAlpha(0.3); // 初始透明度较低
     
-    // 根据屏幕大小调整怪兽尺寸，保持1:1比例
+    // 创建怪兽图片（居中偏上，叠在光环上方）
+    this.monsterSprite = this.add.image(centerX, this.scale.height * 0.4, 'loading_monster');
     const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.25;
     this.monsterSprite.setDisplaySize(monsterSize, monsterSize);
-
-    // 创建黑色蒙版
-    this.monsterMask = this.add.graphics();
-    this.updateMonsterMask(1.0); // 初始完全遮盖
+    this.monsterSprite.setAlpha(0.1); // 初始几乎透明
+    
+    // 添加光环旋转和脉冲效果
+    this.tweens.add({
+      targets: this.lightEffectSprite,
+      rotation: Math.PI * 2,
+      duration: 4000,
+      repeat: -1,
+      ease: 'Linear'
+    });
+    
+    this.tweens.add({
+      targets: this.lightEffectSprite,
+      scaleX: 1.1,
+      scaleY: 1.1,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
 
     // 创建加载文本
     this.loadingText = this.add.text(centerX, this.scale.height * 0.65, '正在生成冲突预测...', {
@@ -155,21 +174,24 @@ export class LoadingScene extends Phaser.Scene {
     });
   }
 
-  private updateMonsterMask(maskRatio: number) {
-    if (!this.monsterMask || !this.monsterSprite) return;
+  private updateLoadingEffects(progress: number) {
+    if (!this.monsterSprite || !this.lightEffectSprite) return;
     
-    this.monsterMask.clear();
+    // 怪兽透明度随进度增加（从0.1到1.0）
+    const monsterAlpha = 0.1 + (progress * 0.9);
+    this.monsterSprite.setAlpha(monsterAlpha);
     
-    if (maskRatio > 0) {
-      const maskHeight = this.monsterSprite.displayHeight * maskRatio;
-      
-      this.monsterMask.fillStyle(0x000000, 1.0);
-      this.monsterMask.fillRect(
-        this.monsterSprite.x - this.monsterSprite.displayWidth / 2,
-        this.monsterSprite.y - this.monsterSprite.displayHeight / 2,
-        this.monsterSprite.displayWidth,
-        maskHeight
-      );
+    // 光环透明度和强度随进度增加（从0.3到1.0）
+    const lightAlpha = 0.3 + (progress * 0.7);
+    this.lightEffectSprite.setAlpha(lightAlpha);
+    
+    // 光环颜色变化 - 从蓝色到金色
+    if (progress > 0.8) {
+      this.lightEffectSprite.setTint(0xffd700); // 金色
+    } else if (progress > 0.5) {
+      this.lightEffectSprite.setTint(0x00ffff); // 青色
+    } else {
+      this.lightEffectSprite.setTint(0x4169e1); // 皇家蓝
     }
   }
 
@@ -230,7 +252,7 @@ export class LoadingScene extends Phaser.Scene {
         this.loadingText.setText(step.text);
       }
       this.updateProgressBar(progress);
-      this.updateMonsterMask(1.0 - progress);
+      this.updateLoadingEffects(progress);
       
       // 如果是生成题目的步骤，调用AI
       if (i === 2 && this.gameData?.consensusTheme) {
@@ -258,23 +280,170 @@ export class LoadingScene extends Phaser.Scene {
     }
 
     try {
-      console.log('🤖 开始生成冲突预测题目...');
+      console.log('🤖 开始增强型冲突预测题目生成...');
+      
+      // 构造玩家装备数据
+      const playersEquipment = this.buildPlayersEquipmentData();
+      console.log('🎒 构造的玩家装备数据:', playersEquipment);
       
       // 调用后端API生成冲突解决题目
       const conflictData = await kimiApi.generateConflictQuestions({
         title: this.gameData.consensusTheme.title,
         description: this.gameData.consensusTheme.description,
         scenarioType: 'general',
+        playersEquipment: playersEquipment, // 传递完整装备数据
       });
 
       this.generatedQuestions = conflictData;
-      console.log('✅ AI题目生成完成:', this.generatedQuestions);
+      console.log('✅ 增强型AI题目生成完成:', this.generatedQuestions);
       
     } catch (error) {
       console.error('❌ AI题目生成失败:', error);
       
       // 使用默认题目
       this.generatedQuestions = this.getDefaultQuestions();
+    }
+  }
+
+  // 构造玩家装备数据
+  private buildPlayersEquipmentData(): any[] {
+    const playersEquipment = [];
+    
+    try {
+      // 处理玩家1
+      if (this.gameData?.player1Config) {
+        const player1Equipment = this.extractPlayerEquipment('1', this.gameData.player1Config);
+        if (player1Equipment) playersEquipment.push(player1Equipment);
+      }
+      
+      // 处理玩家2
+      if (this.gameData?.player2Config) {
+        const player2Equipment = this.extractPlayerEquipment('2', this.gameData.player2Config);
+        if (player2Equipment) playersEquipment.push(player2Equipment);
+      }
+      
+      console.log(`🔍 成功构造${playersEquipment.length}个玩家的装备数据`);
+      return playersEquipment;
+    } catch (error) {
+      console.error('❌ 构造玩家装备数据失败:', error);
+      return [];
+    }
+  }
+
+  // 从玩家配置中提取装备数据
+  private extractPlayerEquipment(playerId: string, playerConfig: any): any | null {
+    try {
+      // 构造标准装备数据格式
+      const equipmentData = {
+        playerId: playerId,
+        budgetAmulet: {
+          enabled: true,
+          range: [500, 2000] as [number, number], // 默认预算范围
+          name: '预算护符',
+          description: '控制消费范围'
+        },
+        timeCompass: {
+          enabled: true,
+          duration: 'full-day', // 默认全天
+          name: '时间指南针',
+          description: '规划活动时长'
+        },
+        attractionShield: {
+          enabled: true,
+          preferences: ['热门景点', '文化古迹'], // 默认景点偏好
+          name: '景点盾牌',
+          description: '发现精彩目的地'
+        },
+        cuisineGem: {
+          enabled: true,
+          types: ['当地特色菜', '小吃'], // 默认美食偏好
+          name: '美食宝珠',
+          description: '探索当地美食文化'
+        }
+      };
+
+      // 如果玩家配置中有装备信息，尝试使用实际数据
+      if (playerConfig.equipment) {
+        const equipment = playerConfig.equipment;
+        
+        // 预算护符数据
+        if (equipment.budgetAmulet?.enabled) {
+          equipmentData.budgetAmulet.range = equipment.budgetAmulet.range || [500, 2000];
+        }
+        
+        // 时间罗盘数据
+        if (equipment.timeCompass?.enabled) {
+          equipmentData.timeCompass.duration = equipment.timeCompass.duration || 'full-day';
+        }
+        
+        // 景点盾牌数据
+        if (equipment.attractionShield?.enabled && equipment.attractionShield.preferences) {
+          equipmentData.attractionShield.preferences = equipment.attractionShield.preferences;
+        }
+        
+        // 美食宝石数据
+        if (equipment.cuisineGem?.enabled && equipment.cuisineGem.types) {
+          equipmentData.cuisineGem.types = equipment.cuisineGem.types;
+        }
+      }
+
+      // 根据共识主题智能调整装备配置
+      if (this.gameData?.consensusTheme) {
+        this.adjustEquipmentByTheme(equipmentData, this.gameData.consensusTheme);
+      }
+
+      console.log(`🎒 玩家${playerId}装备数据:`, {
+        budget: `¥${equipmentData.budgetAmulet.range[0]}-${equipmentData.budgetAmulet.range[1]}`,
+        time: equipmentData.timeCompass.duration,
+        attractions: equipmentData.attractionShield.preferences.join(', '),
+        cuisine: equipmentData.cuisineGem.types.join(', ')
+      });
+
+      return equipmentData;
+    } catch (error) {
+      console.error(`❌ 提取玩家${playerId}装备数据失败:`, error);
+      return null;
+    }
+  }
+
+  // 根据共识主题智能调整装备配置
+  private adjustEquipmentByTheme(equipmentData: any, theme: { title: string; description: string }) {
+    const themeText = (theme.title + ' ' + theme.description).toLowerCase();
+    
+    // 根据主题调整预算范围
+    if (themeText.includes('高端') || themeText.includes('奢华') || themeText.includes('豪华')) {
+      equipmentData.budgetAmulet.range = [1500, 5000];
+    } else if (themeText.includes('经济') || themeText.includes('省钱') || themeText.includes('便宜')) {
+      equipmentData.budgetAmulet.range = [200, 800];
+    } else if (themeText.includes('中档') || themeText.includes('适中')) {
+      equipmentData.budgetAmulet.range = [600, 1500];
+    }
+    
+    // 根据主题调整时间偏好
+    if (themeText.includes('半天') || themeText.includes('短时间')) {
+      equipmentData.timeCompass.duration = 'half-day';
+    } else if (themeText.includes('全天') || themeText.includes('一整天')) {
+      equipmentData.timeCompass.duration = 'full-day';
+    }
+    
+    // 根据主题调整景点偏好
+    if (themeText.includes('自然') || themeText.includes('风景') || themeText.includes('户外')) {
+      equipmentData.attractionShield.preferences = ['自然风光', '公园绿地', '山川湖泊'];
+    } else if (themeText.includes('文化') || themeText.includes('历史') || themeText.includes('博物馆')) {
+      equipmentData.attractionShield.preferences = ['文化古迹', '博物馆', '历史建筑'];
+    } else if (themeText.includes('购物') || themeText.includes('商场')) {
+      equipmentData.attractionShield.preferences = ['购物中心', '商业区', '特色市场'];
+    }
+    
+    // 根据主题调整美食偏好
+    if (themeText.includes('日式') || themeText.includes('日本料理')) {
+      equipmentData.cuisineGem.types = ['日本料理', '寿司', '拉面'];
+    } else if (themeText.includes('中式') || themeText.includes('中餐')) {
+      equipmentData.cuisineGem.types = ['中餐', '川菜', '粤菜'];
+    } else if (themeText.includes('西式') || themeText.includes('西餐')) {
+      equipmentData.cuisineGem.types = ['西餐', '意大利菜', '法式料理'];
+    } else if (themeText.includes('小吃') || themeText.includes('街边美食')) {
+      equipmentData.cuisineGem.types = ['街边小吃', '当地特色', '夜市美食'];
     }
   }
 

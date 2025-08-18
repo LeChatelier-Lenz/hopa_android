@@ -29,6 +29,61 @@ export interface ConflictAnalysis {
   recommendations: string[];
 }
 
+export interface PlayerEquipmentData {
+  playerId: string;
+  budgetAmulet: {
+    enabled: boolean;
+    range: [number, number];
+    name: string;
+    description: string;
+  };
+  timeCompass: {
+    enabled: boolean;
+    duration: string;
+    name: string;
+    description: string;
+  };
+  attractionShield: {
+    enabled: boolean;
+    preferences: string[];
+    name: string;
+    description: string;
+  };
+  cuisineGem: {
+    enabled: boolean;
+    types: string[];
+    name: string;
+    description: string;
+  };
+}
+
+export interface EquipmentConflictAnalysis {
+  budgetConflicts: {
+    detected: boolean;
+    severity: number; // 1-5
+    description: string;
+    playerRanges: Array<{ playerId: string; range: [number, number] }>;
+  };
+  timeConflicts: {
+    detected: boolean;
+    severity: number;
+    description: string;
+    playerPreferences: Array<{ playerId: string; duration: string }>;
+  };
+  attractionConflicts: {
+    detected: boolean;
+    severity: number;
+    description: string;
+    conflictingPreferences: Array<{ playerId: string; preferences: string[] }>;
+  };
+  cuisineConflicts: {
+    detected: boolean;
+    severity: number;
+    description: string;
+    conflictingTypes: Array<{ playerId: string; types: string[] }>;
+  };
+}
+
 export class ConflictPrompts {
   // 基础冲突分析prompt
   static analyzeConflictPotential(scenario: ConflictScenario, userProfiles?: any[]): string {
@@ -391,6 +446,145 @@ ${historyText}
     });
     
     return closestScenario;
+  }
+
+  // 装备冲突检测核心算法
+  static analyzeEquipmentConflicts(playersEquipment: PlayerEquipmentData[]): EquipmentConflictAnalysis {
+    const analysis: EquipmentConflictAnalysis = {
+      budgetConflicts: { detected: false, severity: 1, description: '', playerRanges: [] },
+      timeConflicts: { detected: false, severity: 1, description: '', playerPreferences: [] },
+      attractionConflicts: { detected: false, severity: 1, description: '', conflictingPreferences: [] },
+      cuisineConflicts: { detected: false, severity: 1, description: '', conflictingTypes: [] }
+    };
+
+    // 1. 预算冲突分析
+    const budgetRanges = playersEquipment
+      .filter(p => p.budgetAmulet.enabled)
+      .map(p => ({ playerId: p.playerId, range: p.budgetAmulet.range }));
+    
+    if (budgetRanges.length >= 2) {
+      const minBudgets = budgetRanges.map(r => r.range[0]);
+      const maxBudgets = budgetRanges.map(r => r.range[1]);
+      const overallMin = Math.max(...minBudgets);
+      const overallMax = Math.min(...maxBudgets);
+      
+      if (overallMin > overallMax) {
+        analysis.budgetConflicts.detected = true;
+        analysis.budgetConflicts.severity = 4;
+        analysis.budgetConflicts.description = `预算范围无交集：最低需求¥${overallMin}，最高限制¥${overallMax}`;
+        analysis.budgetConflicts.playerRanges = budgetRanges;
+      } else {
+        const budgetSpread = Math.max(...maxBudgets) - Math.min(...minBudgets);
+        if (budgetSpread > 1000) {
+          analysis.budgetConflicts.detected = true;
+          analysis.budgetConflicts.severity = Math.min(5, Math.floor(budgetSpread / 500));
+          analysis.budgetConflicts.description = `预算差异较大：¥${budgetSpread}的差距可能导致选择分歧`;
+          analysis.budgetConflicts.playerRanges = budgetRanges;
+        }
+      }
+    }
+
+    // 2. 时间冲突分析
+    const timePreferences = playersEquipment
+      .filter(p => p.timeCompass.enabled)
+      .map(p => ({ playerId: p.playerId, duration: p.timeCompass.duration }));
+    
+    if (timePreferences.length >= 2) {
+      const uniqueDurations = [...new Set(timePreferences.map(t => t.duration))];
+      if (uniqueDurations.length > 1) {
+        analysis.timeConflicts.detected = true;
+        analysis.timeConflicts.severity = uniqueDurations.includes('full-day') && uniqueDurations.includes('half-day') ? 3 : 2;
+        analysis.timeConflicts.description = `时间安排偏好不同：${uniqueDurations.join(' vs ')}`;
+        analysis.timeConflicts.playerPreferences = timePreferences;
+      }
+    }
+
+    // 3. 景点偏好冲突分析
+    const attractionPrefs = playersEquipment
+      .filter(p => p.attractionShield.enabled)
+      .map(p => ({ playerId: p.playerId, preferences: p.attractionShield.preferences }));
+    
+    if (attractionPrefs.length >= 2) {
+      const commonPrefs = attractionPrefs[0].preferences.filter(pref => 
+        attractionPrefs.every(a => a.preferences.includes(pref))
+      );
+      
+      if (commonPrefs.length === 0) {
+        analysis.attractionConflicts.detected = true;
+        analysis.attractionConflicts.severity = 3;
+        analysis.attractionConflicts.description = '景点偏好完全不同，需要协调和妥协';
+        analysis.attractionConflicts.conflictingPreferences = attractionPrefs;
+      } else if (commonPrefs.length < 2) {
+        analysis.attractionConflicts.detected = true;
+        analysis.attractionConflicts.severity = 2;
+        analysis.attractionConflicts.description = `景点偏好交集较小，共同兴趣：${commonPrefs.join(', ')}`;
+        analysis.attractionConflicts.conflictingPreferences = attractionPrefs;
+      }
+    }
+
+    // 4. 美食偏好冲突分析
+    const cuisinePrefs = playersEquipment
+      .filter(p => p.cuisineGem.enabled)
+      .map(p => ({ playerId: p.playerId, types: p.cuisineGem.types }));
+    
+    if (cuisinePrefs.length >= 2) {
+      const commonTypes = cuisinePrefs[0].types.filter(type => 
+        cuisinePrefs.every(c => c.types.includes(type))
+      );
+      
+      if (commonTypes.length === 0) {
+        analysis.cuisineConflicts.detected = true;
+        analysis.cuisineConflicts.severity = 2;
+        analysis.cuisineConflicts.description = '美食偏好差异明显，需要寻找折中方案';
+        analysis.cuisineConflicts.conflictingTypes = cuisinePrefs;
+      }
+    }
+
+    return analysis;
+  }
+
+  // 简化的装备感知问题生成prompt
+  static generateEquipmentAwareConflictQuestions(
+    scenario: ConflictScenario,
+    playersEquipment: PlayerEquipmentData[]
+  ): string {
+    const equipmentSummary = playersEquipment.map(player => `
+玩家${player.playerId}：
+- 预算：¥${player.budgetAmulet.range[0]}-${player.budgetAmulet.range[1]}
+- 时间：${player.timeCompass.duration}
+- 景点偏好：${player.attractionShield.preferences.join(', ')}
+- 美食偏好：${player.cuisineGem.types.join(', ')}
+    `).join('\n');
+
+    return `
+场景：${scenario.title} - ${scenario.description}
+
+玩家装备配置：
+${equipmentSummary}
+
+请根据玩家的装备配置差异，生成5个选择题来帮助他们协调冲突、达成共识。
+
+返回JSON格式：
+[
+  {
+    "id": "conflict_1",
+    "type": "choice", 
+    "question": "具体的协调问题",
+    "options": ["选项A", "选项B", "选项C", "选项D"],
+    "correctAnswer": 0,
+    "explanation": "简短解释",
+    "category": "budget"
+  }
+]
+`.trim();
+  }
+
+  // 简化的综合分析方法：直接使用装备数据生成问题
+  static generateComprehensiveConflictAnalysis(
+    scenario: ConflictScenario,
+    playersEquipment: PlayerEquipmentData[]
+  ): string {
+    return this.generateEquipmentAwareConflictQuestions(scenario, playersEquipment);
   }
 }
 

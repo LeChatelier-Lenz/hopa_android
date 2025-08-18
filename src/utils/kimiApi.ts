@@ -1,5 +1,6 @@
 // Kimi K2 大模型 API 接口
 import { apiConfig } from '../config/api';
+import { ConflictPrompts, type PlayerEquipmentData } from '../prompts/conflicts';
 
 interface KimiMessage {
   role: 'system' | 'user' | 'assistant';
@@ -107,7 +108,7 @@ export class KimiAPI {
     }
   }
 
-  // 生成冲突预测和解决题目
+  // 生成冲突预测和解决题目 - 增强版本，支持装备数据智能分析
   async generateConflictQuestions(scenario: {
     title: string;
     description: string;
@@ -115,6 +116,7 @@ export class KimiAPI {
     budget?: [number, number];
     duration?: string;
     preferences?: string[];
+    playersEquipment?: PlayerEquipmentData[]; // 完整的玩家装备数据
   }): Promise<Array<{
     id: string;
     type: 'choice' | 'fill' | 'sort';
@@ -124,26 +126,82 @@ export class KimiAPI {
     explanation: string;
     category: string;
   }>> {
-    const requestBody = {
-      title: scenario.title,
-      description: scenario.description,
-      scenarioType: scenario.scenarioType,
-      budget: scenario.budget,
-      duration: scenario.duration,
-      preferences: scenario.preferences,
-      requestType: 'conflict_prediction', // 新的请求类型
-    };
-
     try {
       const startTime = Date.now();
-      console.log('🚀 发送冲突预测题目生成请求:', requestBody);
+      console.log('🚀 开始增强型冲突预测题目生成，场景数据:', scenario);
 
-      const response = await fetch(`${this.backendUrl}/kimi/generate-conflict-questions`, {
+      // 1. 智能选择相关的冲突场景模板
+      const scenarioType = (scenario.scenarioType as 'friends' | 'family' | 'couples' | 'team' | 'general') || 'general';
+      const relevantScenarios = ConflictPrompts.getRelevantScenarios(scenarioType);
+      console.log('🧠 选择的冲突场景模板:', relevantScenarios.map(s => s.title));
+
+      // 2. 选择最适合的冲突场景
+      const selectedScenario = relevantScenarios.length > 0 ? relevantScenarios[0] : ConflictPrompts.CONFLICT_SCENARIOS.preference_planning;
+      console.log('🎯 选定的主要冲突场景:', selectedScenario.title);
+
+      let questionPrompt: string;
+      let systemPrompt: string;
+
+      // 3. 根据是否有装备数据选择不同的生成策略
+      if (scenario.playersEquipment && scenario.playersEquipment.length >= 2) {
+        console.log('⚡ 启用装备感知模式，分析玩家装备配置冲突');
+        
+        // 使用装备感知的增强分析
+        questionPrompt = ConflictPrompts.generateComprehensiveConflictAnalysis(
+          selectedScenario,
+          scenario.playersEquipment
+        );
+        
+        systemPrompt = `你是专业的${scenarioType === 'friends' ? '朋友聚会' : 
+                                     scenarioType === 'family' ? '家庭活动' : 
+                                     scenarioType === 'couples' ? '情侣约会' : 
+                                     scenarioType === 'team' ? '团队协作' : '通用共识'}冲突解决专家。
+
+你具备以下专业能力：
+1. 深度分析玩家装备配置中的潜在冲突点
+2. 基于预算、时间、偏好数据生成精准的协调问题
+3. 提供实用的、可操作的冲突解决方案
+4. 根据装备冲突严重程度调整问题难度
+
+请严格按照要求生成JSON格式的问题，确保每个问题都针对具体的装备配置冲突。`;
+
+        console.log('🔍 装备冲突分析:', scenario.playersEquipment.map(p => `玩家${p.playerId}：预算¥${p.budgetAmulet.range?.[0]}-${p.budgetAmulet.range?.[1]}`));
+      } else {
+        console.log('📝 使用标准模式，基于场景类型生成题目');
+        
+        // 使用标准的冲突分析
+        const conflictAnalysis = {
+          conflictType: selectedScenario.conflictReasons[0] || '偏好差异',
+          severity: selectedScenario.difficulty,
+          commonGround: ['共同目标', '基本共识'],
+          differences: selectedScenario.conflictReasons,
+          recommendations: ['开放沟通', '寻找平衡点']
+        };
+
+        questionPrompt = ConflictPrompts.generateConflictQuestions(conflictAnalysis, selectedScenario);
+        
+        systemPrompt = `你是${scenarioType === 'friends' ? '朋友聚会' : 
+                               scenarioType === 'family' ? '家庭活动' : 
+                               scenarioType === 'couples' ? '情侣约会' : 
+                               scenarioType === 'team' ? '团队协作' : '通用共识'}冲突解决专家，擅长预测和化解群体决策中的分歧。`;
+      }
+
+      console.log('📝 生成的问题prompt长度:', questionPrompt.length, '字符');
+
+      // 4. 调用后端API，传递生成的prompt
+      const response = await fetch(`${this.backendUrl}/kimi/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: questionPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
       });
 
       const endTime = Date.now();
@@ -155,15 +213,39 @@ export class KimiAPI {
       }
 
       const data = await response.json();
-      console.log(`✅ 冲突题目生成成功 (用时: ${duration}ms):`, data);
+      console.log(`✅ 增强型冲突题目生成成功 (用时: ${duration}ms)`);
 
-      if (!data.success || !data.questions) {
+      if (!data.success || !data.response) {
         throw new Error(data.message || '冲突题目生成失败');
       }
 
-      return data.questions;
+      // 5. 解析AI返回的JSON格式题目
+      try {
+        const jsonMatch = data.response.match(/\[[^\]]*\]/);
+        if (jsonMatch) {
+          const questions = JSON.parse(jsonMatch[0]);
+          // 只返回选择题（过滤掉其他类型）
+          const choiceQuestions = questions.filter((q: any) => q.type === 'choice').slice(0, 5);
+          console.log('🎯 解析出的增强题目数量:', choiceQuestions.length);
+          
+          if (choiceQuestions.length > 0) {
+            console.log('💡 题目预览:', choiceQuestions.map((q: any) => q.question.substring(0, 30) + '...'));
+            return choiceQuestions;
+          } else {
+            console.warn('⚠️ 没有解析出有效的选择题，使用默认题目');
+            return this.getDefaultConflictQuestions();
+          }
+        } else {
+          console.warn('⚠️ AI返回格式不正确，使用默认题目');
+          return this.getDefaultConflictQuestions();
+        }
+      } catch (parseError) {
+        console.error('❌ 解析AI返回结果失败:', parseError);
+        console.log('🔍 原始AI响应:', data.response.substring(0, 500) + '...');
+        return this.getDefaultConflictQuestions();
+      }
     } catch (error) {
-      console.error('❌ 冲突题目生成失败:', error);
+      console.error('❌ 增强型冲突题目生成失败:', error);
       // 返回默认题目
       return this.getDefaultConflictQuestions();
     }
