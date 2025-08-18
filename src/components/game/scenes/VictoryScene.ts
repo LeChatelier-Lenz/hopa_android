@@ -31,7 +31,6 @@ interface VictoryData {
 export class VictoryScene extends Phaser.Scene {
   private victoryData?: VictoryData;
   private eventCallback?: (event: string, data?: any) => void;
-  private qrCodeUrl?: string;
 
   constructor() {
     super({ key: 'VictoryScene' });
@@ -43,58 +42,72 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   preload() {
-    // 加载新的卡片背景图片
+    // 加载卡片背景图片
     this.load.image('card_bg1', '/src/assets/game/ui/card-background1.png');
     this.load.image('card_bg2', '/src/assets/game/ui/card-background2.png');
-    this.load.image('card_example', '/src/assets/game/ui/card-example.png');
     
-    // 生成二维码内容
-    this.generateQRCodeContent();
+    // 加载角色图片
+    this.load.image('character1', '/src/assets/game/characters/cha1.jpg');
+    this.load.image('character2', '/src/assets/game/characters/cha2.jpg');
+    this.load.image('character3', '/src/assets/game/characters/cha3.jpg');
+    this.load.image('character4', '/src/assets/game/characters/cha4.jpg');
+    
+    // 加载怪物图片
+    this.load.image('monster1', '/src/assets/game/monsters/monster1.png');
+    this.load.image('monster2', '/src/assets/game/monsters/monster2.jpg');
+    this.load.image('monster3', '/src/assets/game/monsters/monster3.jpg');
+    this.load.image('monster4', '/src/assets/game/monsters/monster4.jpg');
   }
 
   create() {
-    // 创建精美的共识卡片
+    // 创建AI生成的背景
+    this.createGameBackground();
+    
+    // 创建居中的共识成果卡片
     this.createConsensusCard();
     
     // 添加操作按钮
     this.createActionButtons();
   }
 
-  private generateQRCodeContent() {
-    // 生成二维码内容（包含共识信息）
-    const consensusData = {
-      title: this.victoryData?.consensusTheme?.title || '共识活动',
-      description: this.victoryData?.consensusTheme?.description || '',
-      participants: this.victoryData?.maxParticipants || 2,
-      date: new Date().toLocaleDateString('zh-CN'),
-      id: `CON${Date.now().toString().slice(-6)}` // 生成6位数ID
-    };
-    
-    this.qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(JSON.stringify(consensusData))}`;
-  }
-
-  private createConsensusCard() {
-    // 创建渐变背景
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0xFFD700, 0xFFD700, 0xFFA500, 0xFF8C00, 1);
-    bg.fillRect(0, 0, this.scale.width, this.scale.height);
+  private createGameBackground() {
+    // 如果有AI生成的背景图，使用它
+    const backgroundUrl = (this.victoryData as any)?.backgroundUrl;
+    if (backgroundUrl) {
+      // 加载并显示AI生成的背景
+      this.load.image('ai_background', backgroundUrl);
+      this.load.start();
+      this.load.once('complete', () => {
+        const bg = this.add.image(this.scale.width / 2, this.scale.height / 2, 'ai_background');
+        bg.setDisplaySize(this.scale.width, this.scale.height);
+        bg.setAlpha(0.7); // 稍微透明，避免影响卡片可读性
+      });
+    } else {
+      // 创建默认渐变背景
+      const bg = this.add.graphics();
+      bg.fillGradientStyle(0x667eea, 0x764ba2, 0x667eea, 0x764ba2, 1);
+      bg.fillRect(0, 0, this.scale.width, this.scale.height);
+    }
 
     // 添加闪烁星星效果
     this.createStarEffect();
+  }
 
-    // 创建卡片主体 - 使用新的背景图片
-    const cardWidth = this.scale.width * 0.85;
-    const cardHeight = this.scale.height * 0.8; // 稍微增加高度适应新背景
+  private createConsensusCard() {
+    // 创建居中的共识成果卡片
+    const cardWidth = Math.min(this.scale.width * 0.85, 400); // 限制最大宽度
+    const cardHeight = Math.min(this.scale.height * 0.75, 600); // 限制最大高度
     const cardX = (this.scale.width - cardWidth) / 2;
     const cardY = (this.scale.height - cardHeight) / 2;
 
     // 添加卡片阴影效果
     const shadow = this.add.graphics();
-    shadow.fillStyle(0x000000, 0.2);
-    shadow.fillRoundedRect(cardX + 8, cardY + 8, cardWidth, cardHeight, 20);
+    shadow.fillStyle(0x000000, 0.3);
+    shadow.fillRoundedRect(cardX + 6, cardY + 6, cardWidth, cardHeight, 20);
 
-    // 使用新的卡片背景图片
-    const cardBg = this.add.image(cardX + cardWidth/2, cardY + cardHeight/2, 'card_bg1');
+    // 使用卡片背景图片 - 随机选择一个背景
+    const bgKey = Math.random() > 0.5 ? 'card_bg1' : 'card_bg2';
+    const cardBg = this.add.image(cardX + cardWidth/2, cardY + cardHeight/2, bgKey);
     cardBg.setDisplaySize(cardWidth, cardHeight);
     cardBg.setOrigin(0.5);
 
@@ -116,159 +129,279 @@ export class VictoryScene extends Phaser.Scene {
   private createCardContent(cardX: number, cardY: number, cardWidth: number, cardHeight: number) {
     const centerX = this.scale.width / 2;
     
-    // GAME OVER 标题
-    const gameOverText = this.add.text(centerX, cardY + 40, 'GAME OVER', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.045}px`,
-      color: '#FF4500',
+    // 胜利标题
+    const victoryText = this.add.text(centerX, cardY + 40, '🎉 共识达成！', {
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.08}px`,
+      color: '#FF6B6B',
       fontStyle: 'bold',
-      fontFamily: 'Arial Black'
-    }).setOrigin(0.5);
-
-    // 卡片ID
-    const cardId = `047${Date.now().toString().slice(-3)}`;
-    const idText = this.add.text(centerX, cardY + 85, cardId, {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#666666',
-      fontFamily: 'monospace'
+      fontFamily: 'Arial'
     }).setOrigin(0.5);
 
     // 共识主题
     const title = this.victoryData?.consensusTheme?.title || '共识活动';
-    const titleText = this.add.text(centerX, cardY + 125, `「${title}」`, {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.035}px`,
-      color: '#000000',
+    const titleText = this.add.text(centerX, cardY + 90, `「${title}」`, {
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.06}px`,
+      color: '#2C3E50',
       fontStyle: 'bold',
       wordWrap: { width: cardWidth * 0.8, useAdvancedWrap: true },
       align: 'center'
     }).setOrigin(0.5);
 
     // 日期和状态
-    const currentDate = new Date().toLocaleDateString('zh-CN').replace(/\//g, '/');
-    const statusText = this.add.text(centerX, cardY + 175, `${currentDate}     已合拍！`, {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#000000',
-      fontStyle: 'bold'
+    const currentDate = new Date().toLocaleDateString('zh-CN');
+    const statusText = this.add.text(centerX, cardY + 140, `${currentDate} · 共识达成`, {
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.04}px`,
+      color: '#7F8C8D',
+      fontStyle: 'normal'
     }).setOrigin(0.5);
 
-    // 参与人信息区域
-    this.createParticipantsSection(cardX, cardY + 200, cardWidth);
+    // 参与者和怪兽区域
+    this.createCharactersAndMonstersSection(cardX, cardY + 180, cardWidth, cardHeight - 280);
 
-    // 二维码
-    if (this.qrCodeUrl) {
-      // 由于Phaser限制，创建占位符二维码
-      this.createQRCodePlaceholder(centerX - 60, cardY + cardHeight - 120);
-    }
+    // 共识成果摘要
+    this.createConsensusResultsSection(cardX, cardY + cardHeight - 140, cardWidth);
 
     // Hopa 品牌标识
-    const brandText = this.add.text(centerX, cardY + cardHeight - 40, 'Hopa', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
+    const brandText = this.add.text(centerX, cardY + cardHeight - 30, 'Hopa · AI共识助手', {
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.035}px`,
       color: '#FF6B6B',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
     // 给所有文本添加入场动画
-    const allTexts = [gameOverText, idText, titleText, statusText, brandText];
+    const allTexts = [victoryText, titleText, statusText, brandText];
     allTexts.forEach((text, index) => {
       text.setAlpha(0);
       this.tweens.add({
         targets: text,
         alpha: 1,
-        y: text.y + 5,
+        y: text.y - 10,
         duration: 600,
-        delay: 300 + index * 100,
+        delay: 300 + index * 150,
         ease: 'Power2.easeOut'
       });
     });
   }
 
-  private createParticipantsSection(x: number, y: number, width: number) {
+  private createCharactersAndMonstersSection(x: number, y: number, width: number, height: number) {
     const centerX = this.scale.width / 2;
+    const sectionHeight = height / 2;
     
-    // 参与人数标签
-    const participantsLabel = this.add.text(x + 30, y, '参与人 PARTICIPANTS', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.018}px`,
-      color: '#666666',
+    // 参与者区域
+    const participantsLabel = this.add.text(centerX, y + 10, '🎭 参与共识', {
+      fontSize: `${Math.min(width, height) * 0.06}px`,
+      color: '#34495E',
       fontStyle: 'bold'
-    });
+    }).setOrigin(0.5);
 
-    // 参与人头像区域（简化为圆形图标）
-    const participantCount = this.victoryData?.maxParticipants || 2;
-    const iconSize = 35;
-    const iconSpacing = 45;
-    const startX = centerX - ((participantCount - 1) * iconSpacing / 2);
+    // 显示实际参与的角色
+    const actualCharacters = this.victoryData?.characters || [];
+    const participantCount = Math.min(actualCharacters.length, 4);
+    
+    if (participantCount > 0) {
+      const avatarSize = Math.min(width / (participantCount + 1), 60);
+      const avatarSpacing = width * 0.8 / participantCount;
+      const startX = centerX - ((participantCount - 1) * avatarSpacing / 2);
 
-    for (let i = 0; i < participantCount; i++) {
-      const iconX = startX + i * iconSpacing;
-      const iconY = y + 40;
+      for (let i = 0; i < participantCount; i++) {
+        const character = actualCharacters[i];
+        const avatarX = startX + i * avatarSpacing;
+        const avatarY = y + 50;
 
-      // 创建圆形头像背景
-      const avatarBg = this.add.graphics();
-      avatarBg.fillStyle(0x4169E1);
-      avatarBg.fillCircle(iconX, iconY, iconSize / 2);
+        // 使用角色的实际图片
+        const characterKey = character?.character?.image || `character${(i % 4) + 1}`;
+        const avatar = this.add.image(avatarX, avatarY, characterKey);
+        avatar.setDisplaySize(avatarSize, avatarSize);
+        avatar.setOrigin(0.5);
+        
+        // 创建圆形遮罩
+        const mask = this.add.graphics();
+        mask.fillStyle(0xffffff);
+        mask.fillCircle(avatarX, avatarY, avatarSize / 2);
+        avatar.setMask(mask.createGeometryMask());
 
-      // 添加简单的人物图标
-      const avatarIcon = this.add.text(iconX, iconY, '👤', {
-        fontSize: `${iconSize * 0.6}px`,
+        // 添加边框
+        const border = this.add.graphics();
+        border.lineStyle(3, 0x3498DB);
+        border.strokeCircle(avatarX, avatarY, avatarSize / 2);
+
+        // 头像动画
+        avatar.setScale(0);
+        border.setAlpha(0);
+        this.tweens.add({
+          targets: avatar,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 500,
+          delay: 800 + i * 150,
+          ease: 'Back.easeOut'
+        });
+        this.tweens.add({
+          targets: border,
+          alpha: 1,
+          duration: 300,
+          delay: 1000 + i * 150
+        });
+      }
+    }
+
+    // 打败的怪兽区域
+    const monstersLabel = this.add.text(centerX, y + sectionHeight + 20, '👹 击败的分歧', {
+      fontSize: `${Math.min(width, height) * 0.06}px`,
+      color: '#E74C3C',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // 显示实际击败的怪兽
+    const defeatedMonsters = (this.victoryData as any)?.monsters || [];
+    const monsterCount = Math.min(defeatedMonsters.length, 4);
+    
+    if (monsterCount > 0) {
+      const monsterSize = Math.min(width / (monsterCount + 1), 50);
+      const monsterSpacing = width * 0.6 / monsterCount;
+      const monsterStartX = centerX - ((monsterCount - 1) * monsterSpacing / 2);
+
+      for (let i = 0; i < monsterCount; i++) {
+        const monster = defeatedMonsters[i];
+        const monsterX = monsterStartX + i * monsterSpacing;
+        const monsterY = y + sectionHeight + 60;
+
+        // 使用怪兽的实际图片
+        const monsterKey = monster?.image || `monster${(i % 4) + 1}`;
+        const monsterSprite = this.add.image(monsterX, monsterY, monsterKey);
+        monsterSprite.setDisplaySize(monsterSize, monsterSize);
+        monsterSprite.setOrigin(0.5);
+        monsterSprite.setTint(0x666666); // 变灰表示被击败
+        monsterSprite.setAlpha(0.7);
+
+        // 添加击败效果
+        const strikeThrough = this.add.graphics();
+        strikeThrough.lineStyle(4, 0xFF0000);
+        strikeThrough.lineBetween(
+          monsterX - monsterSize/2, monsterY - monsterSize/2,
+          monsterX + monsterSize/2, monsterY + monsterSize/2
+        );
+
+        // 怪兽动画
+        monsterSprite.setScale(0);
+        strikeThrough.setAlpha(0);
+        this.tweens.add({
+          targets: monsterSprite,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 400,
+          delay: 1200 + i * 100,
+          ease: 'Bounce.easeOut'
+        });
+        this.tweens.add({
+          targets: strikeThrough,
+          alpha: 1,
+          duration: 200,
+          delay: 1500 + i * 100
+        });
+      }
+    }
+
+    // 如果没有数据，显示占位信息
+    if (participantCount === 0) {
+      const noDataText = this.add.text(centerX, y + 50, '暂无参与角色信息', {
+        fontSize: `${Math.min(width, height) * 0.04}px`,
+        color: '#95A5A6',
+        fontStyle: 'italic'
       }).setOrigin(0.5);
-
-      // 头像动画
-      avatarBg.setAlpha(0);
-      avatarIcon.setAlpha(0);
+      
+      noDataText.setAlpha(0);
       this.tweens.add({
-        targets: [avatarBg, avatarIcon],
+        targets: noDataText,
         alpha: 1,
         duration: 400,
-        delay: 800 + i * 100
+        delay: 800
       });
     }
 
-    // 详情按钮
-    const detailsBtn = this.add.graphics();
-    detailsBtn.fillStyle(0xE3F2FD);
-    detailsBtn.fillRoundedRect(x + width - 120, y + 20, 80, 30, 5);
-    
-    const detailsText = this.add.text(x + width - 80, y + 35, '点击查看', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.016}px`,
-      color: '#1976D2',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
+    if (monsterCount === 0) {
+      const noMonstersText = this.add.text(centerX, y + sectionHeight + 60, '完美达成，无分歧需要解决！', {
+        fontSize: `${Math.min(width, height) * 0.04}px`,
+        color: '#95A5A6',
+        fontStyle: 'italic'
+      }).setOrigin(0.5);
+      
+      noMonstersText.setAlpha(0);
+      this.tweens.add({
+        targets: noMonstersText,
+        alpha: 1,
+        duration: 400,
+        delay: 1200
+      });
+    }
 
-    // 让详情按钮可交互
-    detailsBtn.setInteractive(new Phaser.Geom.Rectangle(x + width - 120, y + 20, 80, 30), Phaser.Geom.Rectangle.Contains);
-    detailsBtn.on('pointerdown', () => {
-      this.showConsensusDetails();
+    // 标签动画
+    [participantsLabel, monstersLabel].forEach((label, index) => {
+      label.setAlpha(0);
+      this.tweens.add({
+        targets: label,
+        alpha: 1,
+        duration: 400,
+        delay: 600 + index * 300,
+        ease: 'Power2.easeOut'
+      });
     });
   }
 
-  private createQRCodePlaceholder(x: number, y: number) {
-    // 创建二维码占位符
-    const qrBg = this.add.graphics();
-    qrBg.fillStyle(0x000000);
-    qrBg.fillRect(x, y, 120, 120);
+  private createConsensusResultsSection(x: number, y: number, width: number) {
+    const centerX = this.scale.width / 2;
     
-    // 添加二维码图案（简化版）
-    qrBg.fillStyle(0xffffff);
-    for (let i = 0; i < 10; i++) {
-      for (let j = 0; j < 10; j++) {
-        if ((i + j) % 2 === 0) {
-          qrBg.fillRect(x + i * 12, y + j * 12, 10, 10);
-        }
-      }
-    }
-    
-    // 二维码标签
-    const qrLabel = this.add.text(x + 60, y + 140, '扫码保存', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.016}px`,
-      color: '#666666'
+    // 共识成果标题
+    const resultsLabel = this.add.text(centerX, y + 10, '📊 共识成果', {
+      fontSize: `${Math.min(width, 100) * 0.06}px`,
+      color: '#27AE60',
+      fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    qrBg.setAlpha(0);
-    qrLabel.setAlpha(0);
-    this.tweens.add({
-      targets: [qrBg, qrLabel],
-      alpha: 1,
-      duration: 400,
-      delay: 1200
+    // 显示共识统计
+    const consensusResults = this.victoryData?.consensusResults || [];
+    const totalQuestions = Math.max(consensusResults.length, 3);
+    const consensusRate = consensusResults.length > 0 
+      ? Math.round((consensusResults.reduce((sum, r) => sum + r.consistency, 0) / consensusResults.length) * 100)
+      : 85; // 默认值
+
+    // 共识率显示
+    const rateText = this.add.text(centerX, y + 45, `共识率: ${consensusRate}%`, {
+      fontSize: `${Math.min(width, 100) * 0.05}px`,
+      color: consensusRate >= 80 ? '#27AE60' : consensusRate >= 60 ? '#F39C12' : '#E74C3C',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // 问题统计
+    const questionText = this.add.text(centerX, y + 75, `解决分歧: ${totalQuestions} 个`, {
+      fontSize: `${Math.min(width, 100) * 0.045}px`,
+      color: '#34495E'
+    }).setOrigin(0.5);
+
+    // 成就等级
+    let achievement = '';
+    if (consensusRate >= 90) achievement = '🏆 完美共识';
+    else if (consensusRate >= 80) achievement = '🥇 优秀共识';
+    else if (consensusRate >= 70) achievement = '🥈 良好共识';
+    else achievement = '🥉 基础共识';
+
+    const achievementText = this.add.text(centerX, y + 105, achievement, {
+      fontSize: `${Math.min(width, 100) * 0.045}px`,
+      color: '#9B59B6',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // 成果动画
+    [resultsLabel, rateText, questionText, achievementText].forEach((text, index) => {
+      text.setAlpha(0);
+      this.tweens.add({
+        targets: text,
+        alpha: 1,
+        y: text.y - 5,
+        duration: 400,
+        delay: 1800 + index * 200,
+        ease: 'Power2.easeOut'
+      });
     });
   }
 
@@ -309,9 +442,9 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private createActionButtons() {
-    const buttonY = this.scale.height * 0.9;
-    const buttonWidth = this.scale.width * 0.35;
-    const buttonHeight = 50;
+    const buttonY = this.scale.height * 0.88;
+    const buttonWidth = Math.min(this.scale.width * 0.35, 140);
+    const buttonHeight = 45;
 
     // 保存相册按钮 - 渐变效果
     const saveBtn = this.add.graphics();
