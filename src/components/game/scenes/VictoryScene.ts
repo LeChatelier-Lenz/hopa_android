@@ -199,8 +199,14 @@ export class VictoryScene extends Phaser.Scene {
     const actualCharacters = this.victoryData?.characters || [];
     const participantCount = Math.min(actualCharacters.length, 4);
     
+    console.log('🎭 VictoryScene接收到的角色数据:', {
+      totalCharacters: actualCharacters.length,
+      characters: actualCharacters,
+      participantCount: participantCount
+    });
+    
     if (participantCount > 0) {
-      const avatarSize = Math.min(width / (participantCount + 1), 60);
+      const avatarSize = Math.min(width / (participantCount + 1), 50); // 减小尺寸从60到50
       const avatarSpacing = width * 0.8 / participantCount;
       const startX = centerX - ((participantCount - 1) * avatarSpacing / 2);
 
@@ -245,7 +251,7 @@ export class VictoryScene extends Phaser.Scene {
           characterKey = `character${(i % 4) + 1}`;
         }
         
-        console.log('🎭 使用角色图片key:', characterKey);
+        console.log('🎭 使用角色图片key:', characterKey, '位置:', avatarX, avatarY, '尺寸:', avatarSize);
         
         // 检查图片是否存在，如果不存在则使用默认图片
         let finalCharacterKey = characterKey;
@@ -254,24 +260,38 @@ export class VictoryScene extends Phaser.Scene {
           finalCharacterKey = `character${(i % 4) + 1}`;
         }
         
+        console.log('✅ 最终使用的角色图片key:', finalCharacterKey);
+        
         const avatar = this.add.image(avatarX, avatarY, finalCharacterKey);
+        
+        // 检查原始图片尺寸
+        const texture = this.textures.get(finalCharacterKey);
+        console.log('🎭 角色图片原始尺寸:', texture.source[0].width, 'x', texture.source[0].height);
+        
+        // 强制设置显示尺寸
         avatar.setDisplaySize(avatarSize, avatarSize);
         avatar.setOrigin(0.5);
+        avatar.setVisible(true); // 确保可见
+        avatar.setAlpha(1); // 确保不透明
         
-        // 创建圆形遮罩
-        const mask = this.add.graphics();
-        mask.fillStyle(0xffffff);
-        mask.fillCircle(avatarX, avatarY, avatarSize / 2);
-        avatar.setMask(mask.createGeometryMask());
+        console.log('🎭 角色图片设置后尺寸:', avatar.displayWidth, 'x', avatar.displayHeight, '缩放:', avatar.scaleX, 'x', avatar.scaleY);
+        
+        // 暂时移除圆形遮罩进行调试
+        // const mask = this.add.graphics();
+        // mask.fillStyle(0xffffff);
+        // mask.fillCircle(avatarX, avatarY, avatarSize / 2);
+        // avatar.setMask(mask.createGeometryMask());
+        
+        console.log('🎭 角色图片创建完成:', finalCharacterKey, '可见性:', avatar.visible, '透明度:', avatar.alpha);
 
-        // 添加边框
-        const border = this.add.graphics();
-        border.lineStyle(3, 0x3498DB);
-        border.strokeCircle(avatarX, avatarY, avatarSize / 2);
+        // 暂时移除边框进行调试
+        // const border = this.add.graphics();
+        // border.lineStyle(3, 0x3498DB);
+        // border.strokeCircle(avatarX, avatarY, avatarSize / 2);
 
-        // 头像动画
+        // 头像动画 - 暂时移除border动画
         avatar.setScale(0);
-        border.setAlpha(0);
+        // border.setAlpha(0);
         this.tweens.add({
           targets: avatar,
           scaleX: 1,
@@ -280,12 +300,12 @@ export class VictoryScene extends Phaser.Scene {
           delay: 800 + i * 150,
           ease: 'Back.easeOut'
         });
-        this.tweens.add({
-          targets: border,
-          alpha: 1,
-          duration: 300,
-          delay: 1000 + i * 150
-        });
+        // this.tweens.add({
+        //   targets: border,
+        //   alpha: 1,
+        //   duration: 300,
+        //   delay: 1000 + i * 150
+        // });
       }
     }
 
@@ -300,8 +320,14 @@ export class VictoryScene extends Phaser.Scene {
     const defeatedMonsters = this.victoryData?.monsters || [];
     const monsterCount = Math.min(defeatedMonsters.length, 4);
     
+    console.log('👹 VictoryScene接收到的怪物数据:', {
+      totalMonsters: defeatedMonsters.length,
+      monsters: defeatedMonsters,
+      monsterCount: monsterCount
+    });
+    
     if (monsterCount > 0) {
-      const monsterSize = Math.min(width / (monsterCount + 1), 45); // 减小怪物尺寸
+      const monsterSize = Math.min(width / (monsterCount + 1), 35); // 进一步减小怪物尺寸到35
       const monsterSpacing = width * 0.6 / monsterCount;
       const monsterStartX = centerX - ((monsterCount - 1) * monsterSpacing / 2);
 
@@ -363,10 +389,20 @@ export class VictoryScene extends Phaser.Scene {
         }
         
         const monsterSprite = this.add.image(monsterX, monsterY, finalMonsterKey);
+        
+        // 检查怪物图片原始尺寸
+        const monsterTexture = this.textures.get(finalMonsterKey);
+        console.log('👹 怪物图片原始尺寸:', monsterTexture.source[0].width, 'x', monsterTexture.source[0].height);
+        
+        // 强制设置显示尺寸
         monsterSprite.setDisplaySize(monsterSize, monsterSize);
         monsterSprite.setOrigin(0.5);
+        monsterSprite.setVisible(true); // 确保可见
         monsterSprite.setTint(0x666666); // 变灰表示被击败
         monsterSprite.setAlpha(0.7);
+        
+        console.log('👹 怪物图片设置后尺寸:', monsterSprite.displayWidth, 'x', monsterSprite.displayHeight, '缩放:', monsterSprite.scaleX, 'x', monsterSprite.scaleY);
+        console.log('👹 怪物图片创建完成:', finalMonsterKey, '位置:', monsterX, monsterY, '目标尺寸:', monsterSize);
 
         // 添加击败效果
         const strikeThrough = this.add.graphics();

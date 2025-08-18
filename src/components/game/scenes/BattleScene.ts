@@ -1199,10 +1199,17 @@ export class BattleScene extends Phaser.Scene {
   private showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
     
-    // 重置当前角色的缩放，防止悬停状态的放大效果保持
-    if (this.characterSprites[characterIndex] && this.characterSprites[characterIndex].scene) {
-      this.characterSprites[characterIndex].setScale(1.0);
-    }
+    // 重置所有角色的缩放，防止悬停状态的放大效果保持
+    this.characterSprites.forEach((sprite, index) => {
+      if (sprite && sprite.scene) {
+        sprite.setScale(1.0);
+        console.log(`🔄 重置角色${index + 1}缩放为1.0，原缩放:`, sprite.scaleX, sprite.scaleY);
+      }
+    });
+    
+    // 确保摄像机和场景缩放正常
+    this.cameras.main.setZoom(1.0);
+    console.log('🔄 重置摄像机缩放为1.0');
     
     // 获取角色配置
     const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
@@ -1351,5 +1358,9 @@ export class BattleScene extends Phaser.Scene {
         sprite.setScale(1.0);
       }
     });
+    
+    // 确保摄像机缩放正常
+    this.cameras.main.setZoom(1.0);
+    console.log('🔄 关闭装备模态框时重置摄像机缩放');
   }
 }
