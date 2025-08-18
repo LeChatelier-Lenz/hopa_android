@@ -2,12 +2,16 @@
 import { kimiApi } from '../utils/kimiApi';
 
 export interface AIEquipmentOptions {
-  budget: {
-    min: number;
-    max: number;
+  budgetOptions: Array<{
+    range: [number, number];
     description: string;
-  };
-  timePreference: 'half-day' | 'full-day' | 'overnight';
+    level: string; // 经济型、舒适型、豪华型等
+  }>; // 多个预算选项
+  timeOptions: Array<{
+    duration: string;
+    description: string;
+    suitable: string; // 适合的活动类型描述
+  }>; // 多个时间选项
   attractions: string[]; // 具体的地点名称
   cuisines: string[]; // 具体的美食名称
   transportations: string[]; // 交通方式选项
@@ -37,7 +41,7 @@ export class EquipmentAI {
 
 CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文字、说明、markdown标记或代码块：
 
-{"budget":{"min":300,"max":1000,"description":"根据主题推荐的预算说明"},"timePreference":"full-day","attractions":["具体地点1","具体地点2","具体地点3","具体地点4","具体地点5","具体地点6"],"cuisines":["具体美食1","具体美食2","具体美食3","具体美食4","具体美食5","具体美食6"],"transportations":["地铁出行","公交出行","出租车","自驾车","共享单车","步行"],"atmospheres":["轻松休闲","文艺浪漫","热闹欢快","宁静安详","探索冒险","怀旧复古"],"reasoning":"为什么推荐这些选项的简短说明"}
+{"budgetOptions":[{"range":[200,500],"description":"经济实惠，适合学生和预算有限的出行","level":"经济型"},{"range":[500,1200],"description":"舒适体验，平衡价格与品质","level":"舒适型"},{"range":[1200,3000],"description":"高端享受，追求优质服务和体验","level":"豪华型"}],"timeOptions":[{"duration":"half-day","description":"4-5小时短途体验","suitable":"适合周末放松、快速体验"},{"duration":"full-day","description":"8-10小时深度游览","suitable":"适合深度体验、完整行程"},{"duration":"overnight","description":"1-2天过夜行程","suitable":"适合远途旅行、深度休闲"}],"attractions":["具体地点1","具体地点2","具体地点3","具体地点4","具体地点5","具体地点6"],"cuisines":["具体美食1","具体美食2","具体美食3","具体美食4","具体美食5","具体美食6"],"transportations":["地铁出行","公交出行","出租车","自驾车","共享单车","步行"],"atmospheres":["轻松休闲","文艺浪漫","热闹欢快","宁静安详","探索冒险","怀旧复古"],"reasoning":"为什么推荐这些选项的简短说明"}
 
 注意：直接返回纯JSON对象，不要用\`\`\`json包装，不要添加任何解释文字。
 `;
@@ -50,8 +54,8 @@ CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文
 2. 美食必须是具体的菜品、小吃、餐厅类型名称，不能是"当地特色"这样的抽象分类
 3. 交通方式要结合目的地特点和距离，包含多种选择（地铁、公交、出租车、自驾、单车、步行等）
 4. 氛围偏好要根据活动性质设计，营造不同的体验感受（轻松、浪漫、热闹、宁静、冒险、怀旧等）
-5. 预算要根据目的地消费水平和活动类型合理设定
-6. 时间偏好要根据主题内容判断（一日游=full-day，短时间=half-day，过夜=overnight）
+5. 预算选项要提供3个层次（经济型、舒适型、豪华型），范围要根据目的地消费水平和活动类型合理设定
+6. 时间选项要提供3个选择（半日、全日、过夜），并描述每个选项的适用场景
 7. 每个类别推荐6个选项涵盖不同价位和风格，供不同偏好的参与者选择
 8. 生成的选项应该是这个主题下最具代表性和吸引力的选择`;
 
@@ -93,11 +97,14 @@ CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文
       }
 
       // 验证数据完整性
-      if (!equipmentOptions.budget || 
+      if (!equipmentOptions.budgetOptions || 
+          !equipmentOptions.timeOptions ||
           !equipmentOptions.attractions || 
           !equipmentOptions.cuisines ||
           !equipmentOptions.transportations ||
           !equipmentOptions.atmospheres ||
+          !Array.isArray(equipmentOptions.budgetOptions) ||
+          !Array.isArray(equipmentOptions.timeOptions) ||
           !Array.isArray(equipmentOptions.attractions) ||
           !Array.isArray(equipmentOptions.cuisines) ||
           !Array.isArray(equipmentOptions.transportations) ||
@@ -106,8 +113,8 @@ CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文
       }
 
       console.log('✅ AI装备选项生成成功:', {
-        budget: `¥${equipmentOptions.budget.min}-${equipmentOptions.budget.max}`,
-        time: equipmentOptions.timePreference,
+        budgetOptions: equipmentOptions.budgetOptions.length + '个预算选项',
+        timeOptions: equipmentOptions.timeOptions.length + '个时间选项',
         attractions: equipmentOptions.attractions.length + '个地点',
         cuisines: equipmentOptions.cuisines.length + '个美食',
         transportations: equipmentOptions.transportations.length + '个交通方式',
@@ -141,7 +148,6 @@ CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文
     let cuisines: string[];
     let transportations: string[];
     let atmospheres: string[];
-    let budget = { min: 300, max: 1000, description: '中等消费水平的建议预算' };
 
     if (themeText.includes('上海')) {
       attractions = ['外滩', '豫园', '田子坊', '新天地', '东方明珠', '南京路'];
@@ -166,24 +172,17 @@ CRITICAL: 必须严格按照以下JSON格式返回，不要包含任何其他文
       atmospheres = ['轻松休闲', '文艺浪漫', '热闹欢快', '宁静安详', '探索冒险', '怀旧复古'];
     }
 
-    // 根据主题调整预算
-    if (themeText.includes('高端') || themeText.includes('奢华')) {
-      budget = { min: 1000, max: 3000, description: '高端消费的建议预算' };
-    } else if (themeText.includes('经济') || themeText.includes('省钱')) {
-      budget = { min: 100, max: 500, description: '经济实惠的建议预算' };
-    }
-
-    // 根据主题确定时间偏好
-    let timePreference: 'half-day' | 'full-day' | 'overnight' = 'full-day';
-    if (themeText.includes('半天') || themeText.includes('短时间')) {
-      timePreference = 'half-day';
-    } else if (themeText.includes('过夜') || themeText.includes('两天')) {
-      timePreference = 'overnight';
-    }
-
     return {
-      budget,
-      timePreference,
+      budgetOptions: [
+        { range: [200, 500], description: '经济实惠的出行选择', level: '经济型' },
+        { range: [500, 1200], description: '舒适平衡的体验', level: '舒适型' },
+        { range: [1200, 3000], description: '高端优质的服务', level: '豪华型' }
+      ],
+      timeOptions: [
+        { duration: 'half-day', description: '4-5小时轻松体验', suitable: '适合短途放松' },
+        { duration: 'full-day', description: '8-10小时完整行程', suitable: '适合深度游览' },
+        { duration: 'overnight', description: '1-2天深度体验', suitable: '适合远途旅行' }
+      ],
       attractions,
       cuisines,
       transportations,

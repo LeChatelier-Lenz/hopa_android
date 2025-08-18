@@ -182,35 +182,48 @@ interface EquipmentSlotProps {
   enabled: boolean;
   required?: boolean;
   onClick: () => void;
+  onCustomize?: () => void; // 定制功能回调
   color: string;
 }
 
-const EquipmentSlot: React.FC<EquipmentSlotProps> = ({ icon, image, name, enabled, required = false, onClick, color }) => {
+const EquipmentSlot: React.FC<EquipmentSlotProps> = ({ icon, image, name, enabled, required = false, onClick, onCustomize, color }) => {
 
   return (
     <Box
-      onClick={required ? undefined : onClick}
       sx={{
         width: 70,
-        height: 70,
-        border: `2px solid ${enabled ? color : '#ccc'}`,
-        borderRadius: 2,
+        height: enabled && onCustomize ? 90 : 70, // 已启用装备高度增加以容纳定制按钮
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: enabled ? `${color}15` : 'rgba(0,0,0,0.02)',
-        cursor: required ? 'default' : 'pointer',
-        transition: 'all 0.3s ease',
         position: 'relative',
-        opacity: required && !enabled ? 0.7 : 1,
-        '&:hover': {
-          transform: required ? 'none' : 'scale(1.05)',
-          boxShadow: required ? 'none' : `0 4px 12px ${color}40`,
-          bgcolor: required ? (enabled ? `${color}15` : 'rgba(0,0,0,0.02)') : (enabled ? `${color}25` : 'rgba(0,0,0,0.05)'),
-        },
+        gap: 0.5,
       }}
     >
+      {/* 装备槽位主体 */}
+      <Box
+        onClick={required ? undefined : onClick}
+        sx={{
+          width: 70,
+          height: 70,
+          border: `2px solid ${enabled ? color : '#ccc'}`,
+          borderRadius: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: enabled ? `${color}15` : 'rgba(0,0,0,0.02)',
+          cursor: required ? 'default' : 'pointer',
+          transition: 'all 0.3s ease',
+          position: 'relative',
+          opacity: required && !enabled ? 0.7 : 1,
+          '&:hover': {
+            transform: required ? 'none' : 'scale(1.05)',
+            boxShadow: required ? 'none' : `0 4px 12px ${color}40`,
+            bgcolor: required ? (enabled ? `${color}15` : 'rgba(0,0,0,0.02)') : (enabled ? `${color}25` : 'rgba(0,0,0,0.05)'),
+          },
+        }}
+      >
       {/* 装备图片或图标 */}
       {image ? (
         <img
@@ -288,6 +301,35 @@ const EquipmentSlot: React.FC<EquipmentSlotProps> = ({ icon, image, name, enable
           ✓
         </Box>
       )}
+      </Box>
+
+      {/* 定制按钮 - 仅对已启用且支持定制的装备显示 */}
+      {enabled && onCustomize && (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation(); // 防止触发父级点击事件
+            onCustomize();
+          }}
+          sx={{
+            minWidth: 'auto',
+            width: 50,
+            height: 18,
+            fontSize: '0.5rem',
+            padding: '2px 4px',
+            borderColor: color,
+            color: color,
+            borderRadius: 1,
+            '&:hover': {
+              borderColor: color,
+              bgcolor: `${color}10`,
+            },
+          }}
+        >
+          定制
+        </Button>
+      )}
     </Box>
   );
 };
@@ -306,6 +348,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
   const [cuisineOptions, setCuisineOptions] = useState(fallbackCuisineOptions);
   const [transportationOptions, setTransportationOptions] = useState(fallbackTransportationOptions);
   const [atmosphereOptions, setAtmosphereOptions] = useState(fallbackAtmosphereOptions);
+  const [budgetOptions, setBudgetOptions] = useState<Array<{range: [number, number], description: string, level: string}>>([]);
+  const [timeOptions, setTimeOptions] = useState<Array<{duration: string, description: string, suitable: string}>>([]);
   const [config, setConfig] = useState<CharacterConfig>(() => {
     // 优先使用传入的配置，其次是localStorage，最后是默认配置
     if (initialConfig) {
@@ -422,24 +466,26 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
       setAiEquipmentOptions(options);
       
       // 更新装备选项
-      console.log('🔄 更新界面选项，景点:', options.attractions, '美食:', options.cuisines, '交通:', options.transportations, '氛围:', options.atmospheres);
+      console.log('🔄 更新界面选项，预算:', options.budgetOptions, '时间:', options.timeOptions, '景点:', options.attractions, '美食:', options.cuisines, '交通:', options.transportations, '氛围:', options.atmospheres);
+      setBudgetOptions(options.budgetOptions);
+      setTimeOptions(options.timeOptions);
       setAttractionOptions(options.attractions);
       setCuisineOptions(options.cuisines);
       setTransportationOptions(options.transportations);
       setAtmosphereOptions(options.atmospheres);
       
-      // 自动更新角色配置的预算和时间
+      // 自动更新角色配置的预算和时间 - 使用第一个推荐选项作为默认
       setConfig(prev => ({
         ...prev,
         equipment: {
           ...prev.equipment,
           budgetAmulet: {
             ...prev.equipment.budgetAmulet,
-            range: [options.budget.min, options.budget.max],
+            range: options.budgetOptions[0]?.range || [300, 1000],
           },
           timeCompass: {
             ...prev.equipment.timeCompass,
-            duration: options.timePreference,
+            duration: (options.timeOptions[0]?.duration as 'half-day' | 'full-day' | 'overnight') || 'full-day',
           },
           // 默认选择前几个AI推荐的选项
           attractionShield: {
@@ -540,6 +586,8 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
     setCuisineOptions(fallbackCuisineOptions);
     setTransportationOptions(fallbackTransportationOptions);
     setAtmosphereOptions(fallbackAtmosphereOptions);
+    setBudgetOptions([]);
+    setTimeOptions([]);
     setConfig({
       character: characterOptions[0],
       equipment: {
@@ -780,6 +828,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             enabled={config.equipment.budgetAmulet.enabled}
             required={config.equipment.budgetAmulet.required}
             onClick={() => setSelectedEquipment('budgetAmulet')}
+            onCustomize={() => setSelectedEquipment('budgetAmulet')}
             color="#FFD700"
           />
           
@@ -790,6 +839,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             enabled={config.equipment.timeCompass.enabled}
             required={config.equipment.timeCompass.required}
             onClick={() => setSelectedEquipment('timeCompass')}
+            onCustomize={() => setSelectedEquipment('timeCompass')}
             color="#4CAF50"
           />
           
@@ -800,6 +850,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             enabled={config.equipment.attractionShield.enabled}
             required={config.equipment.attractionShield.required}
             onClick={() => handleEquipmentToggle('attractionShield')}
+            onCustomize={() => setSelectedEquipment('attractionShield')}
             color="#2196F3"
           />
           
@@ -810,6 +861,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
             enabled={config.equipment.cuisineGem.enabled}
             required={config.equipment.cuisineGem.required}
             onClick={() => handleEquipmentToggle('cuisineGem')}
+            onCustomize={() => setSelectedEquipment('cuisineGem')}
             color="#FF5722"
           />
           
@@ -821,6 +873,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               enabled={config.equipment.transportationKey.enabled}
               required={config.equipment.transportationKey.required}
               onClick={() => handleEquipmentToggle('transportationKey')}
+              onCustomize={() => setSelectedEquipment('transportationKey')}
               color="#9C27B0"
             />
           )}
@@ -833,6 +886,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
               enabled={config.equipment.atmosphereRing.enabled}
               required={config.equipment.atmosphereRing.required}
               onClick={() => handleEquipmentToggle('atmosphereRing')}
+              onCustomize={() => setSelectedEquipment('atmosphereRing')}
               color="#FF9800"
             />
           )}
@@ -990,6 +1044,28 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({
                 <Restaurant sx={{ color: '#ff5a5e', fontSize: 30, mb: 1 }} />
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
                   美食: {config.equipment.cuisineGem.types.length}类
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
+          {config.equipment.transportationKey && config.equipment.transportationKey.enabled && (
+            <Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <DirectionsCar sx={{ color: '#ff5a5e', fontSize: 30, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  交通: {config.equipment.transportationKey.preferences.length}种
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
+          {config.equipment.atmosphereRing && config.equipment.atmosphereRing.enabled && (
+            <Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Mood sx={{ color: '#ff5a5e', fontSize: 30, mb: 1 }} />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  氛围: {config.equipment.atmosphereRing.preferences.length}种
                 </Typography>
               </Box>
             </Box>
