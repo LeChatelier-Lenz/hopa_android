@@ -220,7 +220,9 @@ export class AiController {
   @Post('kimi/generate-conflict-questions')
   async generateConflictQuestions(@Body() dto: any) {
     try {
-      // 使用 Kimi 服务生成冲突预测题目
+      console.log('🎒 收到冲突题目生成请求，装备数据:', dto.playersEquipment ? dto.playersEquipment.length + '个玩家' : '无装备数据');
+      
+      // 使用 Kimi 服务生成冲突预测题目，包含装备数据
       const questions = await this.kimiService.generateConflictQuestions({
         title: dto.title,
         description: dto.description,
@@ -228,6 +230,7 @@ export class AiController {
         budget: dto.budget,
         duration: dto.duration,
         preferences: dto.preferences,
+        playersEquipment: dto.playersEquipment, // 传递玩家装备数据
       });
 
       return {

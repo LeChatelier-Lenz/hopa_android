@@ -102,6 +102,9 @@ export class BattleScene extends Phaser.Scene {
       }
     }
     
+    // 加载"共识怪兽登场"图片
+    this.load.image('monster_entry', '/src/assets/game/monsters/共识怪兽登场中.png');
+    
     // 随机加载一个怪兽图片
     const monsterIndex = Math.floor(Math.random() * 5) + 1;
     const monsterExtension = monsterIndex === 1 ? 'png' : 'jpg';
@@ -124,8 +127,6 @@ export class BattleScene extends Phaser.Scene {
     // 加载新的UI界面图片
     this.load.image('question_box', '/src/assets/game/ui/Battle-Interface- Question-Box.png');
     this.load.image('monster_appearance', '/src/assets/game/monsters/Monster-is-Making-its-Appearance.png');
-    this.load.image('calendar_btn', '/src/assets/game/ui/calendar.png');
-    this.load.image('save_btn', '/src/assets/game/ui/save.png');
   }
 
   create() {
@@ -186,51 +187,8 @@ export class BattleScene extends Phaser.Scene {
       strokeThickness: 3,
     }).setOrigin(0.5);
     titleText.setResolution(window.devicePixelRatio || 1);
-    
-    // 添加功能按钮
-    this.createFunctionButtons();
   }
 
-  private createFunctionButtons() {
-    const buttonSize = Math.min(this.scale.width, this.scale.height) * 0.08;
-    const buttonY = this.scale.height * 0.08;
-    
-    // 日历按钮（左上角）
-    const calendarBtn = this.add.image(this.scale.width * 0.1, buttonY, 'calendar_btn');
-    calendarBtn.setDisplaySize(buttonSize, buttonSize * 0.37); // 按原图比例调整
-    calendarBtn.setInteractive();
-    calendarBtn.on('pointerdown', () => this.showGameInfo());
-    calendarBtn.on('pointerover', () => calendarBtn.setScale(1.1));
-    calendarBtn.on('pointerout', () => calendarBtn.setScale(1.0));
-    
-    // 保存按钮（右上角）
-    const saveBtn = this.add.image(this.scale.width * 0.9, buttonY, 'save_btn');
-    saveBtn.setDisplaySize(buttonSize, buttonSize * 0.37); // 按原图比例调整
-    saveBtn.setInteractive();
-    saveBtn.on('pointerdown', () => this.saveGameProgress());
-    saveBtn.on('pointerover', () => saveBtn.setScale(1.1));
-    saveBtn.on('pointerout', () => saveBtn.setScale(1.0));
-  }
-  
-  private showGameInfo() {
-    const info = `🎯 当前进度: 第${this.currentQuestionIndex + 1}题\n📊 已收集共识: ${this.consensusResults.length}个\n🎮 剩余怪物血量: ${this.monsters[0]?.getHealth() || 0}`;
-    this.showFeedback(info);
-  }
-  
-  private saveGameProgress() {
-    // 简单的进度保存提示
-    this.showFeedback('游戏进度已保存到本地存储 💾');
-    
-    // 实际保存逻辑
-    const gameState = {
-      currentQuestionIndex: this.currentQuestionIndex,
-      consensusResults: this.consensusResults,
-      monsterHealth: this.monsters[0]?.getHealth() || 0,
-      timestamp: Date.now()
-    };
-    
-    localStorage.setItem('hopa_battle_progress', JSON.stringify(gameState));
-  }
 
   private setupCharacters() {
     if (!this.gameData) return;
@@ -316,9 +274,25 @@ export class BattleScene extends Phaser.Scene {
     const monsterY = this.scale.height * 0.22;
     const monsterSize = Math.min(this.scale.width, this.scale.height) * 0.32; // 显著增大怪物尺寸
     
+    // 显示怪物登场图片
+    this.showMonsterEntryImage(monsterX, monsterY);
+    
     // 使用真实怪物图片 - 高清渲染
     const monsterSprite = this.add.image(monsterX, monsterY, 'monster_sprite');
     monsterSprite.setDisplaySize(monsterSize, monsterSize);
+    
+    // 怪物初始时透明，等待登场动画结束后显示
+    monsterSprite.setAlpha(0);
+    
+    // 延迟2秒后显示怪物
+    setTimeout(() => {
+      this.tweens.add({
+        targets: monsterSprite,
+        alpha: 1,
+        duration: 1000,
+        ease: 'Power2.easeIn'
+      });
+    }, 2000);
     
     // 根据AI生成的题目总数设置怪物血量
     const aiQuestionCount = this.gameData?.conflictQuestions?.length || 7; // 实际AI题目数量
@@ -346,24 +320,8 @@ export class BattleScene extends Phaser.Scene {
     // 创建怪物血条
     this.createHealthBar('consensus_monster', monsterX, monsterY - monsterSize/2 - 30);
     
-    // 添加怪物登场文字效果
-    const appearanceText = this.add.image(monsterX, monsterY - monsterSize/2 - 80, 'monster_appearance');
-    appearanceText.setDisplaySize(200, 40); // 调整大小适应界面
     
-    // 添加登场动画效果
-    appearanceText.setAlpha(0);
-    this.tweens.add({
-      targets: appearanceText,
-      alpha: 1,
-      scaleX: 1.2,
-      scaleY: 1.2,
-      duration: 1000,
-      yoyo: true,
-      repeat: 2,
-      ease: 'Bounce.easeOut'
-    });
-    
-    // 添加怪物名称 - 调整位置避免与标题重叠
+    // 添加怪物名称 - 调整位置避免与标题重叠，初始透明
     const monsterNameText = this.add.text(monsterX, monsterY - monsterSize/2 - 50, '共识守护兽', {
       fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.032}px`,
       color: '#ffffff',
@@ -372,6 +330,51 @@ export class BattleScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5);
     monsterNameText.setResolution(window.devicePixelRatio || 1);
+    monsterNameText.setAlpha(0);
+    
+    // 延迟3秒后显示怪物名称
+    setTimeout(() => {
+      this.tweens.add({
+        targets: monsterNameText,
+        alpha: 1,
+        duration: 800,
+        ease: 'Power2.easeIn'
+      });
+    }, 3000);
+  }
+
+  // 显示怪物登场图片
+  private showMonsterEntryImage(monsterX: number, monsterY: number) {
+    console.log('👾 显示共识怪物登场图片');
+    
+    // 创建怪物登场图片
+    const entryImage = this.add.image(monsterX, monsterY - 100, 'monster_entry');
+    entryImage.setDisplaySize(300, 80); // 调整大小适应界面
+    entryImage.setAlpha(0);
+    
+    // 登场动画效果
+    this.tweens.add({
+      targets: entryImage,
+      alpha: 1,
+      scaleX: 1.1,
+      scaleY: 1.1,
+      duration: 800,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Bounce.easeOut',
+      onComplete: () => {
+        // 动画结束后淡出
+        this.tweens.add({
+          targets: entryImage,
+          alpha: 0,
+          duration: 1000,
+          delay: 500,
+          onComplete: () => {
+            entryImage.destroy();
+          }
+        });
+      }
+    });
   }
 
 
@@ -1164,170 +1167,50 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
-  // 显示装备详情
-  private async showEquipmentDetails(characterIndex: number) {
+  // 显示装备详情 - 直接显示已选择的装备，无需AI生成
+  private showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
-    
-    // 重置所有角色图片的缩放状态
-    this.characterSprites.forEach(sprite => {
-      sprite.setScale(1.0);
-    });
     
     // 获取角色配置
     const characterConfig = characterIndex === 0 ? this.gameData?.player1Config : this.gameData?.player2Config;
     
-    // 先显示加载状态
-    this.showEquipmentLoadingModal(characterIndex);
-    
-    // 根据共识主题生成AI定制装备内容
-    let customEquipment;
-    try {
-      customEquipment = await this.generateCustomEquipment();
-    } catch (error) {
-      console.error('🔥 AI装备生成失败，使用默认内容:', error);
-      customEquipment = this.getDefaultEquipment();
+    if (!characterConfig) {
+      console.warn('⚠️ 未找到角色配置');
+      return;
     }
     
-    // 构建完整装备数据
+    // 直接使用角色的已选择装备配置
     const equipment = {
       budgetAmulet: {
-        enabled: true,
-        range: [500, 2000] as [number, number],
+        enabled: characterConfig.equipment?.budgetAmulet?.enabled || false,
+        range: characterConfig.equipment?.budgetAmulet?.selectedRange || [500, 1000],
         name: '预算护符',
         description: '控制消费范围'
       },
       timeCompass: {
-        enabled: true,
-        duration: 'full-day',
+        enabled: characterConfig.equipment?.timeCompass?.enabled || false,
+        duration: characterConfig.equipment?.timeCompass?.selectedDuration || 'half-day',
         name: '时间指南针',  
         description: '规划活动时长'
       },
       attractionShield: {
-        enabled: true,
-        preferences: customEquipment.attractionShield.preferences,
-        name: customEquipment.attractionShield.name,
-        description: customEquipment.attractionShield.description
+        enabled: characterConfig.equipment?.attractionShield?.enabled || false,
+        preferences: characterConfig.equipment?.attractionShield?.selectedAttractions || ['未选择'],
+        name: '景点护盾',
+        description: '探索目的地偏好'
       },
       cuisineGem: {
-        enabled: true,
-        types: customEquipment.cuisineGem.types,
-        name: customEquipment.cuisineGem.name,
-        description: customEquipment.cuisineGem.description
+        enabled: characterConfig.equipment?.cuisineGem?.enabled || false,
+        types: characterConfig.equipment?.cuisineGem?.selectedCuisines || ['未选择'],
+        name: '美食宝石',
+        description: '品尝美食偏好'
       }
     };
 
-    // 关闭加载窗口，显示装备详情
-    this.closeLoadingModal();
+    // 直接显示装备详情
     this.createEquipmentModal(characterIndex, equipment);
   }
 
-  private async generateCustomEquipment() {
-    const consensusTheme = this.gameData?.consensusTheme;
-    if (!consensusTheme) {
-      return this.getDefaultEquipment();
-    }
-
-    const response = await fetch(`${apiConfig.getBackendUrl()}/kimi/generate-equipment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: consensusTheme.title,
-        description: consensusTheme.description,
-        scenarioType: 'general',
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('🎨 AI生成装备内容:', data.equipment);
-    return data.equipment;
-  }
-
-  private getDefaultEquipment() {
-    return {
-      cuisineGem: {
-        types: ['当地特色菜', '小吃', '饮品'],
-        name: '美食宝珠',
-        description: '探索当地美食文化'
-      },
-      attractionShield: {
-        preferences: ['热门景点', '文化古迹', '自然风光'],
-        name: '景点盾牌',
-        description: '发现精彩目的地'
-      }
-    };
-  }
-
-  private showEquipmentLoadingModal(characterIndex: number) {
-    // 创建精美的加载提示
-    this.loadingElements = [];
-    
-    const modalBg = this.add.graphics();
-    modalBg.fillStyle(0x000000, 0.8);
-    modalBg.fillRect(0, 0, this.scale.width, this.scale.height);
-    modalBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
-    
-    // 创建加载框
-    const loadingBox = this.add.graphics();
-    const boxWidth = this.scale.width * 0.7;
-    const boxHeight = 150;
-    const boxX = (this.scale.width - boxWidth) / 2;
-    const boxY = (this.scale.height - boxHeight) / 2;
-    
-    loadingBox.fillGradientStyle(0x2E3F4F, 0x2E3F4F, 0x1A252F, 0x1A252F, 1);
-    loadingBox.fillRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
-    loadingBox.lineStyle(2, 0xFFD700, 1);
-    loadingBox.strokeRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
-    
-    const loadingText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, 
-      '🎨 AI正在定制装备内容', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.028}px`,
-      color: '#FFD700',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    const tipText = this.add.text(this.scale.width / 2, this.scale.height / 2 + 15, 
-      '根据你的共识目标生成专属美食和景点推荐...', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.02}px`,
-      color: '#CCCCCC',
-      align: 'center'
-    }).setOrigin(0.5);
-
-    // 添加加载动画
-    const dots = this.add.text(this.scale.width / 2, this.scale.height / 2 + 45, 
-      '●●●', {
-      fontSize: `${Math.min(this.scale.width, this.scale.height) * 0.025}px`,
-      color: '#FFD700',
-    }).setOrigin(0.5);
-
-    // 点点动画
-    this.tweens.add({
-      targets: dots,
-      alpha: { from: 0.3, to: 1 },
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Power2.easeInOut'
-    });
-
-    this.loadingElements = [modalBg, loadingBox, loadingText, tipText, dots];
-  }
-
-  private closeLoadingModal() {
-    if (this.loadingElements) {
-      this.loadingElements.forEach(element => {
-        if (element && element.scene) {
-          element.destroy();
-        }
-      });
-      this.loadingElements = [];
-    }
-  }
 
   private createEquipmentModal(characterIndex: number, equipment: any) {
     // 创建遮罩背景
@@ -1429,7 +1312,7 @@ export class BattleScene extends Phaser.Scene {
       }
     });
     
-    // 确保所有角色图片的缩放状态正确
+    // 角色PNG保持正常尺寸，无需放大
     this.characterSprites.forEach(sprite => {
       if (sprite && sprite.scene) {
         sprite.setScale(1.0);

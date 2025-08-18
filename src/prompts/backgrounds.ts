@@ -14,78 +14,23 @@ export interface BackgroundPromptParams {
 export class BackgroundPrompts {
   // 基础背景模板
   static generateBackground(params: BackgroundPromptParams): string {
-    const scenarioTypeMap = {
-      friends: '朋友聚会共识游戏',
-      family: '家庭活动共识游戏',
-      couples: '情侣约会共识游戏',
-      team: '团队协作共识游戏',
-      solo: '个人规划共识工具',
-      general: '通用共识达成游戏'
-    };
-
-    const moodMap = {
-      romantic: '温馨浪漫，粉色和金色色调',
-      adventure: '充满活力，明亮饱和的色彩',
-      peaceful: '宁静祥和，蓝色和绿色色调',
-      exciting: '充满活力，动感的色彩搭配',
-      cozy: '温暖舒适，暖色调为主',
-      energetic: '活力四射，鲜艳明快的色彩',
-      relaxed: '轻松惬意，柔和自然的色调'
-    };
-
-    const timeMap = {
-      morning: '清晨的柔和阳光，温暖的光线',
-      afternoon: '午后的明媚阳光，充足的光照',
-      evening: '黄昏的金色余晖，温馨的氛围',
-      night: '夜晚的温柔灯光，星空点点'
-    };
-
-    const locationMap = {
-      indoor: '室内场景，舒适的环境氛围',
-      outdoor: '户外场景，自然景观',
-      urban: '都市场景，现代建筑背景',
-      nature: '自然场景，山川湖泊或森林',
-      travel: '旅行场景，异地风光'
-    };
 
     // 人数检测
-    const peopleCount = params.peopleCount || this.extractPeopleCount(params.title, params.description);
-    const peopleDescription = this.getPeopleDescription(peopleCount, params.scenarioType);
+    const peopleCount = params.peopleCount;
+    const peopleDescription = this.getPeopleDescription(peopleCount!);
 
     return `
 主题: ${params.title}
 场景: ${params.description}
-${peopleDescription ? `人数特色: ${peopleDescription}` : ''}
+人数: ${peopleCount ? `${peopleCount}人` : ''}
+人数特色: ${peopleDescription ? `${peopleDescription}` : ''}
 
 请生成一个包含该主题特色的场景插画，垂直构图(9:16比例)，现代插画风格。
 `.trim();
   }
 
-  // 人数检测
-  static extractPeopleCount(title: string, description: string): number {
-    const text = (title + ' ' + description).toLowerCase();
-    
-    // 数字检测
-    const numberMatch = text.match(/(\d+)\s*[个人名]/);
-    if (numberMatch) {
-      return parseInt(numberMatch[1]);
-    }
-    
-    // 关键词检测
-    if (text.includes('情侣') || text.includes('两个人') || text.includes('俩人')) return 2;
-    if (text.includes('三人') || text.includes('3人')) return 3;
-    if (text.includes('四人') || text.includes('4人')) return 4;
-    if (text.includes('五人') || text.includes('5人') || text.includes('兄弟') || text.includes('闺蜜')) return 5;
-    if (text.includes('家庭') || text.includes('家人')) return 4; // 家庭默认4人
-    if (text.includes('团队') || text.includes('同事')) return 6; // 团队默认6人
-    if (text.includes('朋友') && !text.includes('好朋友')) return 3; // 朋友默认3人
-    if (text.includes('好朋友') || text.includes('哥们')) return 2; // 好朋友默认2人
-    
-    return 2; // 默认2人
-  }
-
   // 人数描述
-  static getPeopleDescription(count: number, scenarioType?: string): string {
+  static getPeopleDescription(count: number): string {
     if (count === 1) return '适合个人的安静空间';
     if (count === 2) return '适合双人的温馨空间';  
     if (count <= 4) return '适合小组的舒适空间';

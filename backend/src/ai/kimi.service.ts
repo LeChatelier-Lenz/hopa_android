@@ -107,6 +107,7 @@ export class KimiService {
     budget?: [number, number];
     duration?: string;
     preferences?: string[];
+    playersEquipment?: any[]; // 添加玩家装备数据
   }): Promise<Array<{
     id: string;
     type: 'choice' | 'fill' | 'sort';
@@ -125,7 +126,76 @@ export class KimiService {
                             scenario.scenarioType === 'team' ? '团队协作' :
                             scenario.scenarioType === 'couples' ? '情侣约会' : '共识活动';
     
-    const prompt = `
+    // 根据是否有装备数据生成不同的prompt
+    let prompt: string;
+    let equipmentInfo = '';
+    
+    if (scenario.playersEquipment && scenario.playersEquipment.length > 0) {
+      console.log('🎒 使用装备感知模式生成冲突题目');
+      
+      // 构建装备信息字符串
+      equipmentInfo = '\n\n玩家装备配置：';
+      scenario.playersEquipment.forEach((player, index) => {
+        equipmentInfo += `
+玩家${player.playerId || index + 1}:`;
+        if (player.budgetAmulet?.enabled) {
+          equipmentInfo += `
+  - 预算范围：¥${player.budgetAmulet.range?.[0] || 300}-${player.budgetAmulet.range?.[1] || 1000}`;
+        }
+        if (player.timeCompass?.enabled) {
+          equipmentInfo += `
+  - 时间偏好：${player.timeCompass.duration || '全天'}`;
+        }
+        if (player.attractionShield?.enabled && player.attractionShield.preferences?.length > 0) {
+          equipmentInfo += `
+  - 景点偏好：${player.attractionShield.preferences.join('、')}`;
+        }
+        if (player.cuisineGem?.enabled && player.cuisineGem.types?.length > 0) {
+          equipmentInfo += `
+  - 美食偏好：${player.cuisineGem.types.join('、')}`;
+        }
+        if (player.transportationKey?.enabled && player.transportationKey.preferences?.length > 0) {
+          equipmentInfo += `
+  - 交通偏好：${player.transportationKey.preferences.join('、')}`;
+        }
+        if (player.atmosphereRing?.enabled && player.atmosphereRing.preferences?.length > 0) {
+          equipmentInfo += `
+  - 氛围偏好：${player.atmosphereRing.preferences.join('、')}`;
+        }
+      });
+      
+      prompt = `
+基于以下${scenarioTypeText}场景和玩家装备配置，生成有针对性的冲突预测和解决题目：
+- 活动主题：${scenario.title}
+- 活动描述：${scenario.description}${equipmentInfo}
+
+请根据上述玩家装备的差异，生成5个关于协调分歧、达成共识的选择题。
+
+重点关注：
+- 预算差异：不同玩家的预算范围差异
+- 景点偏好冲突：不同玩家的景点选择偏好
+- 美食口味分歧：不同玩家的美食类型偏好
+- 时间安排矛盾：不同的时间需求
+- 交通方式分歧：不同玩家的交通偏好差异
+- 氛围期望冲突：不同玩家对活动氛围的不同期望
+
+返回JSON格式数组：
+[
+  {
+    "id": "conflict_1",
+    "type": "choice",
+    "question": "具体针对装备差异的协调问题",
+    "options": ["选项A", "选项B", "选项C", "选项D"],
+    "correctAnswer": 0,
+    "explanation": "答案解释",
+    "category": "budget"
+  }
+]
+`;
+    } else {
+      console.log('📄 使用通用模式生成冲突题目');
+      
+      prompt = `
 基于以下${scenarioTypeText}场景，生成一系列关于冲突预测和解决的题目：
 - 活动主题：${scenario.title}
 - 活动描述：${scenario.description}
@@ -146,9 +216,9 @@ ${scenario.preferences ? `- 偏好选择：${scenario.preferences.join('、')}` 
     "category": "budget"
   }
 ]
-
 题目类别(category)应该包含：budget（预算）、time（时间）、preference（偏好）、communication（沟通）等。
 `;
+    }
 
     try {
       const response = await this.chat([
