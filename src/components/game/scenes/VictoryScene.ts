@@ -137,7 +137,7 @@ export class VictoryScene extends Phaser.Scene {
     
     // 胜利标题
     const victoryText = this.add.text(centerX, cardY + 40, '🎉 共识达成！', {
-      fontSize: `${Math.min(cardWidth, cardHeight) * 0.08}px`,
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.12}px`,
       color: '#FF6B6B',
       fontStyle: 'bold',
       fontFamily: 'Arial'
@@ -146,7 +146,7 @@ export class VictoryScene extends Phaser.Scene {
     // 共识主题
     const title = this.victoryData?.consensusTheme?.title || '共识活动';
     const titleText = this.add.text(centerX, cardY + 90, `「${title}」`, {
-      fontSize: `${Math.min(cardWidth, cardHeight) * 0.06}px`,
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.09}px`,
       color: '#2C3E50',
       fontStyle: 'bold',
       wordWrap: { width: cardWidth * 0.8, useAdvancedWrap: true },
@@ -156,7 +156,7 @@ export class VictoryScene extends Phaser.Scene {
     // 日期和状态
     const currentDate = new Date().toLocaleDateString('zh-CN');
     const statusText = this.add.text(centerX, cardY + 140, `${currentDate} · 共识达成`, {
-      fontSize: `${Math.min(cardWidth, cardHeight) * 0.04}px`,
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.06}px`,
       color: '#7F8C8D',
       fontStyle: 'normal'
     }).setOrigin(0.5);
@@ -169,7 +169,7 @@ export class VictoryScene extends Phaser.Scene {
 
     // Hopa 品牌标识
     const brandText = this.add.text(centerX, cardY + cardHeight - 30, 'Hopa · AI共识助手', {
-      fontSize: `${Math.min(cardWidth, cardHeight) * 0.035}px`,
+      fontSize: `${Math.min(cardWidth, cardHeight) * 0.055}px`,
       color: '#FF6B6B',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -195,7 +195,7 @@ export class VictoryScene extends Phaser.Scene {
     
     // 参与者区域
     const participantsLabel = this.add.text(centerX, y + 10, '🎭 参与共识', {
-      fontSize: `${Math.min(width, height) * 0.06}px`,
+      fontSize: `${Math.min(width, height) * 0.09}px`,
       color: '#34495E',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -318,7 +318,7 @@ export class VictoryScene extends Phaser.Scene {
 
     // 打败的怪兽区域
     const monstersLabel = this.add.text(centerX, y + sectionHeight + 20, '👹 击败的分歧', {
-      fontSize: `${Math.min(width, height) * 0.06}px`,
+      fontSize: `${Math.min(width, height) * 0.09}px`,
       color: '#E74C3C',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -494,7 +494,7 @@ export class VictoryScene extends Phaser.Scene {
     
     // 共识成果标题
     const resultsLabel = this.add.text(centerX, y + 10, '📊 共识成果', {
-      fontSize: `${Math.min(width, 100) * 0.06}px`,
+      fontSize: `${Math.min(width, 100) * 0.09}px`,
       color: '#27AE60',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -508,14 +508,14 @@ export class VictoryScene extends Phaser.Scene {
 
     // 共识率显示
     const rateText = this.add.text(centerX, y + 45, `共识率: ${consensusRate}%`, {
-      fontSize: `${Math.min(width, 100) * 0.05}px`,
+      fontSize: `${Math.min(width, 100) * 0.075}px`,
       color: consensusRate >= 80 ? '#27AE60' : consensusRate >= 60 ? '#F39C12' : '#E74C3C',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
     // 问题统计
     const questionText = this.add.text(centerX, y + 75, `解决分歧: ${totalQuestions} 个`, {
-      fontSize: `${Math.min(width, 100) * 0.045}px`,
+      fontSize: `${Math.min(width, 100) * 0.068}px`,
       color: '#34495E'
     }).setOrigin(0.5);
 
@@ -527,7 +527,7 @@ export class VictoryScene extends Phaser.Scene {
     else achievement = '🥉 基础共识';
 
     const achievementText = this.add.text(centerX, y + 105, achievement, {
-      fontSize: `${Math.min(width, 100) * 0.045}px`,
+      fontSize: `${Math.min(width, 100) * 0.068}px`,
       color: '#9B59B6',
       fontStyle: 'bold'
     }).setOrigin(0.5);

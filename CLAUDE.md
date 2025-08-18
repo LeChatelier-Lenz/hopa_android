@@ -51,26 +51,45 @@ Hopa是一款创新的AI驱动共识达成工具，通过游戏化的方式帮�
 ```
 ├── src/                 # 前端源码
 │   ├── components/      # React组件
-│   │   └── game/       # Phaser游戏组件
-│   │       ├── scenes/ # 游戏场景
-│   │       │   ├── LoadingScene.ts   # 加载场景
-│   │       │   ├── BattleScene.ts    # 战斗场景
-│   │       │   └── VictoryScene.ts   # 胜利场景
-│   │       └── entities/             # 游戏实体
+│   │   ├── CharacterCreator.tsx     # 角色创建组件
+│   │   ├── ConsensusResult.tsx      # 共识结果展示
+│   │   └── game/                    # Phaser游戏组件
+│   │       ├── PhaserGame.tsx       # 游戏主容器
+│   │       ├── scenes/              # 游戏场景
+│   │       │   ├── LoadingScene.ts  # 加载场景
+│   │       │   ├── BattleScene.ts   # 战斗场景
+│   │       │   └── VictoryScene.ts  # 胜利场景
+│   │       └── entities/            # 游戏实体
+│   │           ├── Character.ts     # 角色实体
+│   │           └── Monster.ts       # 怪物实体
+│   ├── pages/           # 页面组件
+│   │   ├── launch.tsx               # 启动页面
+│   │   ├── consensus-result.tsx     # 共识结果页面
+│   │   └── game.tsx                 # 游戏页面
 │   ├── assets/game/     # 游戏资源
 │   │   ├── monsters/    # 怪物图片(monster1-5)
-│   │   └── characters/  # 角色图片(cha1-4)
+│   │   ├── characters/  # 角色图片(cha1-4)
+│   │   ├── equipment/   # 装备图片
+│   │   └── ui/          # UI素材
 │   ├── utils/           # 工具函数
 │   │   ├── doubaoApi.ts # AI图片生成
-│   │   └── kimiApi.ts   # AI文本生成
+│   │   ├── kimiApi.ts   # AI文本生成
+│   │   └── consensusApi.ts # 共识API
 │   └── prompts/         # AI提示词管理
+│       ├── backgrounds.ts  # 背景生成prompt
+│       ├── conflicts.ts    # 冲突分析prompt
+│       ├── consensusAI.ts  # 共识AI prompt
+│       └── equipmentAI.ts  # 装备AI prompt
 └── backend/             # 后端源码
     ├── src/
     │   ├── ai/          # AI代理服务
-    │   ├── auth/        # 认证系统
+    │   │   ├── ai.controller.ts # AI API控制器
+    │   │   ├── doubao.service.ts # Doubao AI服务
+    │   │   └── kimi.service.ts   # Kimi AI服务
+    │   ├── auth/        # JWT认证系统
     │   ├── user/        # 用户管理
-    │   └── prisma/      # 数据库
-    └── prisma/          # 数据库模型
+    │   └── prisma/      # 数据库ORM
+    └── prisma/          # 数据库模型定义
 ```
 
 ## 🎨 AI提示词系统
@@ -177,23 +196,28 @@ npm run build
 
 ## 🔧 技术特性
 
-### CORS解决方案
-使用Vite代理配置解决跨域问题：
+### 图片显示优化系统
+解决了Phaser.js中图片缩放和显示的关键问题：
+
 ```typescript
-// vite.config.ts
-server: {
-  proxy: {
-    '/api/doubao': { target: 'https://ark.cn-beijing.volces.com' },
-    '/api/kimi': { target: 'https://api.moonshot.cn' }
-  }
-}
+// 正确使用setDisplaySize而非setScale
+sprite.setDisplaySize(targetWidth, targetHeight); // ✅ 正确
+sprite.setScale(1.0); // ❌ 会覆盖setDisplaySize效果
+
+// VictoryScene.ts - 共识结果页面
+avatar.setDisplaySize(40, 40);  // 角色图片40x40px
+monsterSprite.setDisplaySize(30, 30); // 怪物图片30x30px
+
+// BattleScene.ts - 战斗场景
+charSprite.setDisplaySize(charSize, charSize); // 动态计算角色尺寸
 ```
 
 ### 智能提示词管理
-- 场景类型自动识别
-- 动态参数生成
-- 预设模板库
-- 智能匹配算法
+- **场景类型自动识别**: 朋友、家庭、情侣、团队场景智能匹配
+- **装备感知冲突检测**: 基于用户装备配置分析潜在分歧点
+- **动态问题生成**: 根据冲突严重度(1-5级)调整问题难度
+- **多模式切换**: 装备感知模式 vs 标准通用模式
+- **预设模板库**: 覆盖旅行、聚餐、娱乐等主要决策场景
 
 ### 游戏状态管理
 - React状态管理
@@ -223,13 +247,15 @@ server: {
 5. **战斗挑战**: 通过回答问题击败分歧怪物
 6. **共识达成**: 获得最终决策结果和奖励
 
-## 🆕 最新更新 (2025-08-18) - 增强AI系统
+## 🆕 最新更新 (2025-08-18) - 增强AI系统与修复关键Bug
 
 ### 🧠 智能Prompt管理系统
 - **✅ 前端Prompt迁移**: 将AI背景和问题生成的prompt从后端迁移到前端src/prompts目录
 - **✅ 模块化Prompt结构**: 
   - `backgrounds.ts`: 智能背景生成，支持场景类型自动匹配
   - `conflicts.ts`: 复杂冲突检测和问题生成系统
+  - `consensusAI.ts`: 共识达成AI助手
+  - `equipmentAI.ts`: 装备冲突分析专家
   - `index.ts`: 统一prompt管理和优化工具
 - **✅ 智能场景匹配**: 根据用户输入自动识别朋友、家庭、情侣、团队等场景类型
 
@@ -250,13 +276,46 @@ server: {
   - 标准模式: 无装备数据时使用通用场景模板
 - **✅ 增强提示词**: 专业的冲突解决专家角色设定，提供实用可操作的解决方案
 
-### 🔧 技术架构升级
+### 🔧 关键Bug修复 - 图片缩放问题
+- **✅ 战斗场景修复**: 解决点击角色装备详情后背景角色变大的问题
+  - 问题根源: `setScale(1.0)`覆盖`setDisplaySize()`效果
+  - 解决方案: 统一使用`setDisplaySize()`进行尺寸控制
+  - 影响范围: `showEquipmentDetails()`、`closeEquipmentModal()`、鼠标悬停事件
+- **✅ 胜利场景修复**: 解决共识结果页面图片显示异常问题
+  - 移除冲突的卡片级别和精灵级别缩放动画
+  - 角色图片固定40x40px，怪物图片固定30x30px
+  - 字体大小优化，提升可读性(字体尺寸增加50%)
+- **✅ 显示尺寸标准化**: 建立统一的图片尺寸管理机制
+  - 角色图片: 战斗场景动态计算，胜利场景40px
+  - 怪物图片: 战斗场景动态调整，胜利场景30px
+  - 避免`setScale()`与`setDisplaySize()`混用
+
+### 🗂️ 代码结构优化
+- **✅ 移除弃用文件**: 清理不再使用的MapScene.ts相关代码
 - **✅ TypeScript类型安全**: 完整的装备数据和冲突分析类型定义
 - **✅ 错误容错机制**: 多层级fallback确保AI服务稳定性
-- **✅ 智能日志系统**: 详细的装备分析和冲突检测日志
+- **✅ 智能日志系统**: 详细的装备分析、冲突检测和图片加载日志
 - **✅ 测试用例验证**: 创建完整的测试场景验证冲突检测算法
 
 ## 🔮 未来功能规划
+
+### 游戏体验增强
+- [ ] 角色动画系统：添加角色战斗动画和技能特效
+- [ ] 怪物AI升级：基于用户历史数据生成个性化怪物
+- [ ] 成就系统：解锁徽章、称号和特殊装备
+- [ ] 多人实时对战：支持4人以上团队决策模式
+
+### AI智能化提升
+- [ ] 情感分析集成：识别用户语气和情绪倾向
+- [ ] 预测性建议：基于历史数据预测最佳决策路径
+- [ ] 自然语言优化：支持语音输入和对话式交互
+- [ ] 文化适配：针对不同地区用户的文化背景优化
+
+### 数据分析与洞察
+- [ ] 决策模式分析：生成用户群体决策习惯报告
+- [ ] 共识效果追踪：长期跟踪决策执行情况
+- [ ] 团队协作分析：识别团队动态和协作模式
+- [ ] 个性化仪表盘：可视化展示个人决策数据
 
 
 ## 📝 贡献指南
