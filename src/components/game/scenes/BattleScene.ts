@@ -223,8 +223,13 @@ export class BattleScene extends Phaser.Scene {
       charSprite.setDisplaySize(charSize, charSize);
       charSprite.setInteractive();
       charSprite.on('pointerdown', () => this.showEquipmentDetails(i));
-      charSprite.on('pointerover', () => charSprite.setScale(1.05));
-      charSprite.on('pointerout', () => charSprite.setScale(1.0));
+      charSprite.on('pointerover', () => {
+        const hoverSize = charSize * 1.05;
+        charSprite.setDisplaySize(hoverSize, hoverSize);
+      });
+      charSprite.on('pointerout', () => {
+        charSprite.setDisplaySize(charSize, charSize);
+      });
       
       // 存储角色图片引用
       this.characterSprites.push(charSprite);
@@ -1199,11 +1204,12 @@ export class BattleScene extends Phaser.Scene {
   private showEquipmentDetails(characterIndex: number) {
     console.log('🎒 显示角色装备详情:', characterIndex);
     
-    // 重置所有角色的缩放，防止悬停状态的放大效果保持
+    // 重置所有角色的显示尺寸，防止悬停状态的放大效果保持
+    const charSize = Math.min(this.scale.width, this.scale.height) * 0.18;
     this.characterSprites.forEach((sprite, index) => {
       if (sprite && sprite.scene) {
-        sprite.setScale(1.0);
-        console.log(`🔄 重置角色${index + 1}缩放为1.0，原缩放:`, sprite.scaleX, sprite.scaleY);
+        sprite.setDisplaySize(charSize, charSize);
+        console.log(`🔄 重置角色${index + 1}显示尺寸为${charSize}x${charSize}`);
       }
     });
     
@@ -1352,10 +1358,11 @@ export class BattleScene extends Phaser.Scene {
       }
     });
     
-    // 角色PNG保持正常尺寸，无需放大
+    // 重置角色显示尺寸为正常大小
+    const charSize = Math.min(this.scale.width, this.scale.height) * 0.18;
     this.characterSprites.forEach(sprite => {
       if (sprite && sprite.scene) {
-        sprite.setScale(1.0);
+        sprite.setDisplaySize(charSize, charSize);
       }
     });
     

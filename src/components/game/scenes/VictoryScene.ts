@@ -112,16 +112,21 @@ export class VictoryScene extends Phaser.Scene {
     cardBg.setDisplaySize(cardWidth, cardHeight);
     cardBg.setOrigin(0.5);
 
-    // 添加入场动画
-    cardBg.setScale(0);
-    shadow.setScale(0);
-    this.tweens.add({
-      targets: [cardBg, shadow],
-      scaleX: 1,
-      scaleY: 1,
-      duration: 800,
-      ease: 'Back.easeOut'
-    });
+    // 暂时移除卡片入场动画以修复图片缩放问题
+    // cardBg.setScale(0);
+    // shadow.setScale(0);
+    // this.tweens.add({
+    //   targets: [cardBg, shadow],
+    //   scaleX: 1,
+    //   scaleY: 1,
+    //   duration: 800,
+    //   ease: 'Back.easeOut'
+    // });
+    
+    // 直接设置为正常尺寸
+    cardBg.setScale(1);
+    shadow.setScale(1);
+    console.log('🃏 跳过卡片缩放动画，直接显示');
 
     // 创建卡片内容
     this.createCardContent(cardX, cardY, cardWidth, cardHeight);
@@ -206,7 +211,7 @@ export class VictoryScene extends Phaser.Scene {
     });
     
     if (participantCount > 0) {
-      const avatarSize = Math.min(width / (participantCount + 1), 50); // 减小尺寸从60到50
+      const avatarSize = Math.min(width / (participantCount + 1), 40); // 进一步减小尺寸到40
       const avatarSpacing = width * 0.8 / participantCount;
       const startX = centerX - ((participantCount - 1) * avatarSpacing / 2);
 
@@ -289,17 +294,19 @@ export class VictoryScene extends Phaser.Scene {
         // border.lineStyle(3, 0x3498DB);
         // border.strokeCircle(avatarX, avatarY, avatarSize / 2);
 
-        // 头像动画 - 暂时移除border动画
-        avatar.setScale(0);
-        // border.setAlpha(0);
-        this.tweens.add({
-          targets: avatar,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 500,
-          delay: 800 + i * 150,
-          ease: 'Back.easeOut'
-        });
+        // 暂时移除头像动画，直接显示图片
+        // avatar.setScale(0);
+        // this.tweens.add({
+        //   targets: avatar,
+        //   scaleX: 1,
+        //   scaleY: 1,
+        //   duration: 500,
+        //   delay: 800 + i * 150,
+        //   ease: 'Back.easeOut'
+        // });
+        
+        // 直接设置最终状态 - 保持setDisplaySize设置的缩放
+        console.log('🎭 保持角色图片显示尺寸，跳过缩放动画');
         // this.tweens.add({
         //   targets: border,
         //   alpha: 1,
@@ -327,7 +334,7 @@ export class VictoryScene extends Phaser.Scene {
     });
     
     if (monsterCount > 0) {
-      const monsterSize = Math.min(width / (monsterCount + 1), 35); // 进一步减小怪物尺寸到35
+      const monsterSize = Math.min(width / (monsterCount + 1), 30); // 进一步减小怪物尺寸到30
       const monsterSpacing = width * 0.6 / monsterCount;
       const monsterStartX = centerX - ((monsterCount - 1) * monsterSpacing / 2);
 
@@ -412,23 +419,27 @@ export class VictoryScene extends Phaser.Scene {
           monsterX + monsterSize/2, monsterY + monsterSize/2
         );
 
-        // 怪兽动画
-        monsterSprite.setScale(0);
-        strikeThrough.setAlpha(0);
-        this.tweens.add({
-          targets: monsterSprite,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 400,
-          delay: 1200 + i * 100,
-          ease: 'Bounce.easeOut'
-        });
-        this.tweens.add({
-          targets: strikeThrough,
-          alpha: 1,
-          duration: 200,
-          delay: 1500 + i * 100
-        });
+        // 暂时移除怪兽动画，直接显示
+        // monsterSprite.setScale(0);
+        // strikeThrough.setAlpha(0);
+        // this.tweens.add({
+        //   targets: monsterSprite,
+        //   scaleX: 1,
+        //   scaleY: 1,
+        //   duration: 400,
+        //   delay: 1200 + i * 100,
+        //   ease: 'Bounce.easeOut'
+        // });
+        // this.tweens.add({
+        //   targets: strikeThrough,
+        //   alpha: 1,
+        //   duration: 200,
+        //   delay: 1500 + i * 100
+        // });
+        
+        // 直接设置最终状态 - 保持setDisplaySize设置的缩放
+        strikeThrough.setAlpha(1);
+        console.log('👹 保持怪物图片显示尺寸，跳过缩放动画');
       }
     }
 
