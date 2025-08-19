@@ -10,7 +10,8 @@
     "test.unit": "vitest",
     "lint": "eslint",
     "kimi": "node scripts/test-kimi.js",
-    "doubao": "node scripts/test-doubao.js"
+    "doubao": "node scripts/test-doubao.js",
+    "resources": "capacitor-resources -p android,ios"
   },
   "dependencies": {
     "@capacitor/android": "7.4.2",
@@ -27,6 +28,7 @@
     "@mui/material": "^6.5.0",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
+    "capacitor-resources": "^2.0.5",
     "dotenv": "^17.2.1",
     "ionicons": "^7.4.0",
     "node-fetch": "^3.3.2",
@@ -38,6 +40,7 @@
     "react-transition-group": "^4.4.5"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.4.2",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
